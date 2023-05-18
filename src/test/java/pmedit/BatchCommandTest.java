@@ -98,7 +98,7 @@ public class BatchCommandTest {
 	@Test
 	public void testFromCSV() throws FileNotFoundException, IOException, Exception {
 		List<PMTuple> fileList = MetadataInfoTest.randomFiles(NUM_FILES);
-		ArrayList<String> csvLines = new ArrayList<String>();
+		List<String> csvLines = new ArrayList<String>();
 		csvLines.add("file.fullPath,doc.author,dc.title");
 		for(PMTuple t: fileList){
 			csvLines.add(t.file.getAbsolutePath() + ",AUTHOR-AUTHOR,\"TITLE,TITLE\"");
@@ -136,6 +136,4 @@ public class BatchCommandTest {
 		}
 	}
 
-	
-	
 }

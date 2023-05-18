@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Calendar;
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class TestDcDates {
 	
 	@Test
 	public void test() throws Exception {
-		File temp = File.createTempFile("test-file", ".pdf");
+		File temp = Files.createTempFile("test-file", ".pdf").toFile();
         temp.deleteOnExit();
         Calendar cal = Calendar.getInstance();
         

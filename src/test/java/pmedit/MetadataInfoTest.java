@@ -36,7 +36,7 @@ public class MetadataInfoTest {
 	}
 	
 	public static File emptyPdf() throws Exception{
-		File temp = File.createTempFile("test-file", ".pdf");
+		File temp = Files.createTempFile("test-file", ".pdf").toFile();
         PDDocument doc = new PDDocument();
         try {
             // a valid PDF document requires at least one page
@@ -51,7 +51,7 @@ public class MetadataInfoTest {
 	}
 
 	public static File csvFile(List<String> lines) throws Exception{
-		File temp = File.createTempFile("test-csv", ".csv");
+		File temp = Files.createTempFile("test-csv", ".csv").toFile();
 		Files.write(temp.toPath(), lines, Charset.forName("UTF-8"));
 		temp.deleteOnExit();
         return temp;
