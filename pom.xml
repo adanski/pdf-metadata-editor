@@ -305,111 +305,7 @@
 				</executions>
 			</plugin>
 
-			<plugin>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>fx-package</id>
-						<phase>none</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<configuration>
-  							<tasks>
-								<replace dir="${project.build.directory}/win/app/" value="..\runtime\bin\client\jvm.dll">
-								 	<include name="*.ini"/>
-									<replacetoken>@vm.location@</replacetoken>
-								</replace>
-								<replace dir="${project.build.directory}/win/app/" value="${project.build.finalName}">
-								 	<include name="*.ini"/>
-									<replacetoken>@project.build.finalName@</replacetoken>
-								</replace>
-                        		<property name="staging.dir" value="${project.build.directory}" />
-                        		<property name="dist.dir" value="${project.build.directory}" />
-                        		<property name="app.name" value="${app.filename}" />
-                        		<property name="app.title" value="${project.name}" />
-                        		<property name="app.version" value="${project.version}" />
-		                        <property name="app.main.class" value="pmedit.Main"/>
-		                        <property name="app.main.jar" value="pdf-metadata-edit-${project.version}.jar" />
-		                        <property name="app.bundle.name" value="pdf-metadata-edit-${project.version}" />
-		                        <property name="jre.bundle" value="jre_to_bundle/" />
-		                        <property name="native.bundle" value="${native.bundle}" />
-		                        <ant antfile="build-install.xml">
-		                          <target name="deploy-bundle"/>
-        		                </ant>
-	                      </tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>create-dmg</id>
-						<phase>package</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<configuration>
-							<tasks>
-								<exec executable="javapackager">
-									<arg value="-deploy" />
-									<arg value="-v" />
-									<arg value='-Bruntime=jre_to_bundle/' />
-									<arg value='-BappVersion=${project.version}' />
-									<arg value='-Bmac.CFBundleIdentifier=pmedit.pdf-metadata-editor' />
-									<arg value="-native" />
-									<arg value="dmg" />
-									<arg value="-outdir" />
-									<arg value="${project.build.directory}" />
-									<arg value="-outfile" />
-									<arg value="${project.name}.app" />
-									<arg value="-srcfiles" />
-									<arg value="${project.build.directory}/jar/pdf-metadata-edit-${project.version}.jar" />
-									<arg value="-appclass" />
-									<arg value="pmedit.Main" />
-									<arg value="-name" />
-									<arg value="${app.filename}" />
-									<arg value="-title" />
-									<arg value="${project.name}" />
-								</exec>
-							</tasks>
-						</configuration>
-					</execution>					
-				</executions>
-			</plugin>
-			
-
-	        <plugin>
-	            <groupId>org.apache.maven.plugins</groupId>
-	            <artifactId>maven-dependency-plugin</artifactId>
-	            <executions>
-	                <execution>
-                        <goals>
-                            <goal>properties</goal>
-                        </goals>
-                    </execution>
-	                <execution>
-	                    <id>unpack</id>
-	                    <phase>prepare-package</phase>
-	                    <goals>
-	                        <goal>unpack</goal>
-	                    </goals>
-	                    <configuration>
-	                        <artifactItems>
-	                            <artifactItem>
-					                   <groupId>com.pretty-tools</groupId>
-					                   <artifactId>jdde-bundle</artifactId>
-					                   <version>2.0.3</version>
-					                   <type>jar</type>
-	                                <includes>com/pretty_tools/dde/*.dll</includes>
-	                                <outputDirectory>${project.build.directory}/win</outputDirectory>
-	                            </artifactItem>
-	                        </artifactItems>
-	                    </configuration>
-	                </execution>
-	            </executions>
-	        </plugin>
-	        
-	        		       
 		</plugins>
-
 
 		<pluginManagement>
 			<plugins>
@@ -473,12 +369,5 @@
 	     	<artifactId>opencsv</artifactId>
 	     	<version>5.7.1</version>
  		</dependency>
-		<!-- 
-		<dependency>
-		    <groupId>com.pretty-tools</groupId>
-		    <artifactId>jdde-bundle</artifactId>
-		    <version>2.0.3</version>
-		</dependency>
-		-->
 	</dependencies>
 </project>
