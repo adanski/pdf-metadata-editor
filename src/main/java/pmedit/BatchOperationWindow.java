@@ -250,16 +250,13 @@ public class BatchOperationWindow extends JFrame {
 			}
 		});
 		setGlassPane(new FileDropMessage());
-		if(!BatchMan.hasBatch()){
-			btnAction.setEnabled(false);
-			txtpnnoBatchLicense.setVisible(true);
-		} else {
-			btnAction.setEnabled(true);
-			gridBagLayout.rowHeights[4] = 0;
-			getContentPane().remove(txtpnnoBatchLicense);
-			gridBagLayout.removeLayoutComponent(txtpnnoBatchLicense);
-			txtpnnoBatchLicense = null;
-		}
+
+		btnAction.setEnabled(true);
+		gridBagLayout.rowHeights[4] = 0;
+		getContentPane().remove(txtpnnoBatchLicense);
+		gridBagLayout.removeLayoutComponent(txtpnnoBatchLicense);
+		txtpnnoBatchLicense = null;
+
 		
 		java.net.URL imgURL = PDFMetadataEditWindow.class
 				.getResource("pdf-metadata-edit.png");

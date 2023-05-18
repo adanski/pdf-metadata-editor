@@ -655,18 +655,7 @@ public class PreferencesWindow extends JDialog {
 	}
 
 	protected void updateLicense() {
-		String key = keyField.getText();
-		String email = emailField.getText();
-		if(key.isEmpty()&& email.isEmpty()){
-			labelLicenseStatus.setText("No license");
-		}else if(BatchMan.maybeHasBatch(key, email)){
-			Main.getPreferences().put("key", keyField.getText());
-			Main.getPreferences().put("email", emailField.getText());
-			labelLicenseStatus.setText("Valid license");
-		} else {
-			labelLicenseStatus.setText("Invalid license");
-		}
-		
+		labelLicenseStatus.setText("No license");
 	}
 	
 	private String desc = "";
