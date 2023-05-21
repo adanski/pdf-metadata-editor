@@ -1,4 +1,4 @@
-# Pdf Metadata Editor
+# PDFx Metadata Editor
 
 ## What
 
