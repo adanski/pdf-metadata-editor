@@ -1,12 +1,13 @@
 package app.pdfx.prefs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.AbstractPreferences;
 import java.util.prefs.BackingStoreException;
 
@@ -17,16 +18,16 @@ import java.util.prefs.BackingStoreException;
  * @version $Id: FilePreferences.java 283 2009-06-18 17:06:58Z david $
  */
 public class FilePreferences extends AbstractPreferences {
-    private static final Logger log = Logger.getLogger(FilePreferences.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(FilePreferences.class);
 
-    private Map<String, String> root;
-    private Map<String, FilePreferences> children;
+    private final Map<String, String> root;
+    private final Map<String, FilePreferences> children;
     private boolean isRemoved = false;
 
     public FilePreferences(AbstractPreferences parent, String name) {
         super(parent, name);
 
-        log.finest("Instantiating node " + name);
+        log.debug("Instantiating node " + name);
 
         root = new TreeMap<String, String>();
         children = new TreeMap<String, FilePreferences>();
@@ -34,7 +35,7 @@ public class FilePreferences extends AbstractPreferences {
         try {
             sync();
         } catch (BackingStoreException e) {
-            log.log(Level.SEVERE, "Unable to sync on creation of node " + name, e);
+            log.error("Unable to sync on creation of node " + name, e);
         }
     }
 
@@ -43,7 +44,7 @@ public class FilePreferences extends AbstractPreferences {
         try {
             flush();
         } catch (BackingStoreException e) {
-            log.log(Level.SEVERE, "Unable to flush after putting " + key, e);
+            log.error("Unable to flush after putting " + key, e);
         }
     }
 
@@ -56,7 +57,7 @@ public class FilePreferences extends AbstractPreferences {
         try {
             flush();
         } catch (BackingStoreException e) {
-            log.log(Level.SEVERE, "Unable to flush after removing " + key, e);
+            log.error("Unable to flush after removing " + key, e);
         }
     }
 

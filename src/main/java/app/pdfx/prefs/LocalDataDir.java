@@ -1,74 +1,138 @@
 package app.pdfx.prefs;
 
-import com.sun.jna.platform.win32.Guid.GUID;
-import com.sun.jna.platform.win32.Shell32Util;
-import com.sun.jna.platform.win32.ShlObj;
-import com.sun.jna.platform.win32.Win32Exception;
-import app.pdfx.OsCheck;
+import java.io.FileNotFoundException;
+import java.nio.file.Path;
 
-import java.io.File;
+import static java.lang.System.getProperty;
+import static java.lang.System.getenv;
+import static org.apache.commons.lang3.SystemUtils.*;
 
-public class LocalDataDir {
+/**
+ * Responsible for determining the directory to write application data, across
+ * multiple platforms. See also:
+ *
+ * <ul>
+ * <li>
+ *   <a href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html">
+ *     Linux: XDG Base Directory Specification
+ *   </a>
+ * </li>
+ * <li>
+ *   <a href="https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables">
+ *     Windows: Recognized environment variables
+ *   </a>
+ * </li>
+ * <li>
+ *   <a href="https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html">
+ *     MacOS: File System Programming Guide
+ *   </a>
+ * </li>
+ * </ul>
+ * </p>
+ */
+public final class LocalDataDir {
 
-    public static String get() {
-        String dir;
-        switch (OsCheck.getOperatingSystemType()) {
-            case Windows:
-                dir = getWindows();
-                break;
-            case MacOS:
-                dir = getMacos();
-                break;
-            case Linux:
-                dir = getLinux();
-                break;
-            default:
-                dir = "";
-                break;
-        }
+    private static final Path UNDEFINED = Path.of("/");
 
-        if (dir.length() > 0 && !dir.endsWith(File.separator)) {
-            dir = dir + File.separator;
-        }
-        return dir;
+    private static final String PROP_USER_HOME = getProperty("user.home");
+    private static final String PROP_OS_VERSION = getProperty("os.version");
+    private static final String ENV_APPDATA = getenv("AppData");
+    private static final String ENV_XDG_DATA_HOME = getenv("XDG_DATA_HOME");
+
+    private LocalDataDir() {
     }
 
-    // according to : https://msdn.microsoft.com/en-us/library/windows/desktop/dd378457(v=vs.85).aspx
-    public static final String FOLDERID_APPDATA = "{F1B32785-6FBA-4FCF-9D55-7B8E7F157091}";
+    public static Path getAppPath(final String appName) throws FileNotFoundException {
+        final var osPath = isWindows()
+                ? getWinAppPath()
+                : isMacOs()
+                ? getMacAppPath()
+                : isUnix()
+                ? getUnixAppPath()
+                : UNDEFINED;
 
-    private static String getWindows() {
-        String dir = "";
-        try {
-            dir = Shell32Util.getKnownFolderPath(GUID.fromString(FOLDERID_APPDATA));
-        } catch (Win32Exception e) {
-            try {
-                dir = Shell32Util.getFolderPath(ShlObj.CSIDL_APPDATA);
-            } catch (Exception e1) {
-            }
-        } catch (UnsatisfiedLinkError e) {
-            try {
-                dir = Shell32Util.getFolderPath(ShlObj.CSIDL_APPDATA);
-            } catch (Exception e1) {
-            }
-        }
-        return dir;
+        final var path = osPath.equals(UNDEFINED)
+                ? getDefaultAppPath(appName)
+                : osPath.resolve(appName);
+
+        return ensureExists(path) ? path : fail(path);
     }
 
-    // according to : https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-    private static String getLinux() {
-        String dir = System.getenv("XDG_CONFIG_HOME");
-        if (dir == null || dir.length() == 0) {
-            String home = System.getenv("HOME");
-            if (home == null || home.length() == 0) {
-                return "";
-            }
-            return home + File.separator + ".config";
-        }
-        return dir;
+    private static Path fail(final Path path) throws FileNotFoundException {
+        throw new FileNotFoundException(path.toString());
     }
 
-    // according to: https://developer.apple.com/library/mac/qa/qa1170/_index.html
-    private static String getMacos() {
-        return System.getProperty("user.home") + "/Library/Preferences/";
+    private static Path getWinAppPath() {
+        return ENV_APPDATA == null || ENV_APPDATA.isBlank()
+                ? home(getWinVerAppPath())
+                : Path.of(ENV_APPDATA);
+    }
+
+    /**
+     * Gets the application path with respect to the Windows version.
+     *
+     * @return The directory name paths relative to the user's home directory.
+     */
+    private static String[] getWinVerAppPath() {
+        return PROP_OS_VERSION.startsWith("5.")
+                ? new String[]{"Application Data"}
+                : new String[]{"AppData", "Roaming"};
+    }
+
+    private static Path getMacAppPath() {
+        final var path = home("Library", "Application Support");
+
+        return ensureExists(path) ? path : UNDEFINED;
+    }
+
+    private static Path getUnixAppPath() {
+        // Fallback in case the XDG data directory is undefined.
+        var path = home(".local", "share");
+
+        if (ENV_XDG_DATA_HOME != null && !ENV_XDG_DATA_HOME.isBlank()) {
+            final var xdgPath = Path.of(ENV_XDG_DATA_HOME);
+
+            path = ensureExists(xdgPath) ? xdgPath : path;
+        }
+
+        return path;
+    }
+
+    /**
+     * Returns a hidden directory relative to the user's home directory.
+     *
+     * @param appName The application name.
+     * @return A suitable directory for storing application files.
+     */
+    private static Path getDefaultAppPath(final String appName) {
+        return home('.' + appName);
+    }
+
+    private static Path home(final String... paths) {
+        return Path.of(PROP_USER_HOME, paths);
+    }
+
+    /**
+     * Verifies whether the path exists or was created.
+     *
+     * @param path The directory to verify.
+     * @return {@code true} if the path already exists or was created,
+     * {@code false} if the directory doesn't exist and couldn't be created.
+     */
+    private static boolean ensureExists(final Path path) {
+        final var file = path.toFile();
+        return file.exists() || file.mkdirs();
+    }
+
+    private static boolean isWindows() {
+        return IS_OS_WINDOWS;
+    }
+
+    private static boolean isMacOs() {
+        return IS_OS_MAC;
+    }
+
+    private static boolean isUnix() {
+        return IS_OS_UNIX;
     }
 }

@@ -1,16 +1,22 @@
 package app.pdfx;
 
-import org.apache.jempbox.xmp.*;
+import app.pdfx.CommandLine.ParseError;
+import app.pdfx.MdStruct.StructType;
+import com.google.gson.GsonBuilder;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
+import org.apache.xmpbox.XMPMetadata;
+import org.apache.xmpbox.schema.AdobePDFSchema;
+import org.apache.xmpbox.schema.DublinCoreSchema;
+import org.apache.xmpbox.schema.XMPBasicSchema;
+import org.apache.xmpbox.schema.XMPRightsManagementSchema;
+import org.apache.xmpbox.xml.DomXmpParser;
+import org.apache.xmpbox.xml.XmpParsingException;
+import org.apache.xmpbox.xml.XmpSerializer;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import app.pdfx.CommandLine.ParseError;
-import app.pdfx.MdStruct.StructType;
 
 import javax.xml.transform.TransformerException;
 import java.io.*;
@@ -248,7 +254,6 @@ public class MetadataInfo {
         public String certificate;
         public Boolean marked;
         public List<String> owner;
-        public String copyright;
         public String usageTerms;
         public String webStatement;
     }
@@ -257,7 +262,6 @@ public class MetadataInfo {
         public boolean certificate = true;
         public boolean marked = true;
         public boolean owner = true;
-        public boolean copyright = true;
         public boolean usageTerms = true;
         public boolean webStatement = true;
 
@@ -322,7 +326,7 @@ public class MetadataInfo {
         this.fileEnabled = new FileInfoEnabled();
     }
 
-    protected void loadFromPDF(PDDocument document) throws IOException {
+    protected void loadFromPDF(PDDocument document) throws IOException, XmpParsingException {
         PDDocumentInformation info = document.getDocumentInformation();
 
         // Basic info
@@ -340,25 +344,12 @@ public class MetadataInfo {
         PDDocumentCatalog catalog = document.getDocumentCatalog();
         PDMetadata meta = catalog.getMetadata();
 
-
         if (meta != null) {
-            // Workaround stupid jempbox not recognizing ISO dates with subsecond granularity
-            InputStream is = meta.createInputStream();
-            java.util.Scanner s = new java.util.Scanner(is);
-            s.useDelimiter("\\A");
-            String xmpData = s.hasNext() ? s.next() : "";
-            s.close();
-            is.close();
-            // remove subsecond digits from dates like 2017-03-26T18:50:09.184000+02:00
-            String re = "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2})\\.\\d+([-+Z])";
-            xmpData = xmpData.replaceAll(re, "$1$2");
-            InputStream xmpDataStream = new ByteArrayInputStream(xmpData.getBytes());
-
             // Load the metadata
-            XMPMetadata xmp = XMPMetadata.load(xmpDataStream);
+            XMPMetadata metadata = XmpParserProvider.get().parse(meta.createInputStream());
 
             // XMP Basic
-            XMPSchemaBasic bi = xmp.getBasicSchema();
+            XMPBasicSchema bi = metadata.getXMPBasicSchema();
             if (bi != null) {
 
                 basic.creatorTool = bi.getCreatorTool();
@@ -369,12 +360,12 @@ public class MetadataInfo {
                 basic.label = bi.getLabel();
                 basic.nickname = bi.getNickname();
                 basic.identifiers = bi.getIdentifiers();
-                basic.advisories = bi.getAdvisories();
+                basic.advisories = bi.getAdvisory();
                 basic.metadataDate = bi.getMetadataDate();
             }
 
             // XMP PDF
-            XMPSchemaPDF pi = xmp.getPDFSchema();
+            AdobePDFSchema pi = metadata.getAdobePDFSchema();
             if (pi != null) {
                 pdf.pdfVersion = pi.getPDFVersion();
                 pdf.keywords = pi.getKeywords();
@@ -382,7 +373,7 @@ public class MetadataInfo {
             }
 
             // XMP Dublin Core
-            XMPSchemaDublinCore dcS = xmp.getDublinCoreSchema();
+            DublinCoreSchema dcS = metadata.getDublinCoreSchema();
             if (dcS != null) {
                 dc.title = dcS.getTitle();
                 dc.description = dcS.getDescription();
@@ -394,7 +385,7 @@ public class MetadataInfo {
                 dc.identifier = dcS.getIdentifier();
                 dc.languages = dcS.getLanguages();
                 dc.publishers = dcS.getPublishers();
-                dc.relationships = dcS.getRelationships();
+                dc.relationships = dcS.getRelations();
                 dc.rights = dcS.getRights();
                 dc.source = dcS.getSource();
                 dc.subjects = dcS.getSubjects();
@@ -402,14 +393,13 @@ public class MetadataInfo {
             }
 
             // XMP Rights
-            XMPSchemaRightsManagement ri = xmp.getRightsManagementSchema();
+            XMPRightsManagementSchema ri = metadata.getXMPRightsManagementSchema();
             if (ri != null) {
-                rights.certificate = ri.getCertificateURL();
+                rights.certificate = ri.getCertificate();
                 // rights.marked  = ri.getMarked(); // getMarked() return false on null value
-                rights.marked = ri.getBooleanProperty("xmpRights:Marked");
+                rights.marked = ri.getBooleanPropertyValue("xmpRights:Marked");
                 rights.owner = ri.getOwners();
                 rights.usageTerms = ri.getUsageTerms();
-                rights.copyright = ri.getCopyright();
                 rights.webStatement = ri.getWebStatement();
             }
         }
@@ -421,8 +411,7 @@ public class MetadataInfo {
 
     protected static String hrSizes[] = new String[]{"B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
 
-    public void loadFromPDF(File pdfFile) throws FileNotFoundException,
-            IOException {
+    public void loadFromPDF(File pdfFile) throws IOException, XmpParsingException {
 
         loadPDFFileInfo(pdfFile);
 
@@ -516,14 +505,14 @@ public class MetadataInfo {
 
         XMPMetadata xmpOld = null;
         if (meta != null) {
-            xmpOld = XMPMetadata.load(meta.createInputStream());
+            xmpOld = XmpParserProvider.get().parse(meta.createInputStream());
         }
-        XMPMetadata xmpNew = new XMPMetadata();
+        XMPMetadata xmpNew = XMPMetadata.createXMPMetadata();
         // XMP Basic
-        XMPSchemaBasic biOld = xmpOld != null ? xmpOld.getBasicSchema() : null;
+        XMPBasicSchema biOld = xmpOld != null ? xmpOld.getXMPBasicSchema() : null;
         boolean atLeastOneXmpBasicSet = false;
         if (basicEnabled.atLeastOne() || (biOld != null)) {
-            XMPSchemaBasic bi = xmpNew.addBasicSchema();
+            XMPBasicSchema bi = xmpNew.createAndAddXMPBasicSchema();
 
             if (basicEnabled.advisories) {
                 if (basic.advisories != null) {
@@ -533,7 +522,7 @@ public class MetadataInfo {
                     }
                 }
             } else if (biOld != null) {
-                List<String> old = biOld.getAdvisories();
+                List<String> old = biOld.getAdvisory();
                 if (old != null) {
                     for (String a : old) {
                         bi.addAdvisory(a);
@@ -663,10 +652,10 @@ public class MetadataInfo {
             }
         }
         // XMP PDF
-        XMPSchemaPDF piOld = xmpOld != null ? xmpOld.getPDFSchema() : null;
+        AdobePDFSchema piOld = xmpOld != null ? xmpOld.getAdobePDFSchema() : null;
         boolean atLeastOneXmpPdfSet = false;
         if (pdfEnabled.atLeastOne() || (piOld != null)) {
-            XMPSchemaPDF pi = xmpNew.addPDFSchema();
+            AdobePDFSchema pi = xmpNew.createAndAddAdobePDFSchema();
 
             if (pdfEnabled.keywords) {
                 if (pdf.keywords != null) {
@@ -709,10 +698,10 @@ public class MetadataInfo {
         }
 
         // XMP Dublin Core
-        XMPSchemaDublinCore dcOld = xmpOld != null ? xmpOld.getDublinCoreSchema() : null;
+        DublinCoreSchema dcOld = xmpOld != null ? xmpOld.getDublinCoreSchema() : null;
         boolean atLeastOneXmpDcSet = false;
         if (dcEnabled.atLeastOne() || (dcOld != null)) {
-            XMPSchemaDublinCore dcS = xmpNew.addDublinCoreSchema();
+            DublinCoreSchema dcS = xmpNew.createAndAddDublinCoreSchema();
 
             if (dcEnabled.title) {
                 if (dc.title != null) {
@@ -771,7 +760,7 @@ public class MetadataInfo {
                     }
                 }
             } else if (dcOld != null) {
-                List<String> old = dcOld.getRelationships();
+                List<String> old = dcOld.getRelations();
                 if (old != null) {
                     for (String a : old) {
                         dcS.addRelation(a);
@@ -894,7 +883,7 @@ public class MetadataInfo {
 
             if (dcEnabled.rights) {
                 if (dc.rights != null) {
-                    dcS.setRights(null, dc.rights);
+                    dcS.addRights(null, dc.rights);
                     atLeastOneXmpDcSet = true;
                 }
             } else if (dcOld != null) {
@@ -903,7 +892,7 @@ public class MetadataInfo {
                     for (String rl : rll) {
                         String rights = dcOld.getRights(rl);
                         if (rights != null) {
-                            dcS.setRights(rl, rights);
+                            dcS.addRights(rl, rights);
                             atLeastOneXmpDcSet = true;
                         }
                     }
@@ -956,21 +945,21 @@ public class MetadataInfo {
         }
 
         // XMP Rights
-        XMPSchemaRightsManagement riOld = xmpOld != null ? xmpOld.getRightsManagementSchema() : null;
+        XMPRightsManagementSchema riOld = xmpOld != null ? xmpOld.getXMPRightsManagementSchema() : null;
         boolean atLeastOneXmpRightsSet = false;
         if (rightsEnabled.atLeastOne() || (riOld != null)) {
-            XMPSchemaRightsManagement ri = xmpNew.addRightsManagementSchema();
+            XMPRightsManagementSchema ri = xmpNew.createAndAddXMPRightsManagementSchema();
 
             if (rightsEnabled.certificate) {
                 if (rights.certificate != null) {
-                    ri.setCertificateURL(rights.certificate);
+                    ri.setCertificate(rights.certificate);
                     ;
                     atLeastOneXmpRightsSet = true;
                 }
             } else if (riOld != null) {
-                String old = riOld.getCertificateURL();
+                String old = riOld.getCertificate();
                 if (old != null) {
-                    ri.setCertificateURL(old);
+                    ri.setCertificate(old);
                     atLeastOneXmpRightsSet = true;
                 }
             }
@@ -1003,20 +992,6 @@ public class MetadataInfo {
                         ri.addOwner(a);
                         atLeastOneXmpRightsSet = true;
                     }
-                }
-            }
-
-            if (rightsEnabled.copyright) {
-                if (rights.copyright != null) {
-                    ri.setCopyright(rights.copyright);
-                    ;
-                    atLeastOneXmpRightsSet = true;
-                }
-            } else if (riOld != null) {
-                String old = riOld.getCopyright();
-                if (old != null) {
-                    ri.setCopyright(old);
-                    atLeastOneXmpRightsSet = true;
                 }
             }
 
@@ -1053,7 +1028,10 @@ public class MetadataInfo {
                 atLeastOneXmpBasicSet || atLeastOneXmpPdfSet || atLeastOneXmpDcSet || atLeastOneXmpRightsSet) {
             PDMetadata metadataStream = new PDMetadata(document);
             try {
-                metadataStream.importXMPMetadata(xmpNew.asByteArray());
+                XmpSerializer serializer = new XmpSerializer();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                serializer.serialize(xmpNew, baos, true);
+                metadataStream.importXMPMetadata(baos.toByteArray());
             } catch (TransformerException e) {
                 throw new Exception("Failed to save document:" + e.getMessage());
             }
@@ -1262,10 +1240,10 @@ public class MetadataInfo {
     }
 
     public String toJson() {
-        return toJson(0);
+        return toJson(false);
     }
 
-    public String toJson(int indent) {
+    public String toJson(boolean pretty) {
         Map<String, Object> map = asFlatMap(t -> {
             if (t != null) {
                 if (t instanceof Calendar) {
@@ -1274,33 +1252,11 @@ public class MetadataInfo {
             }
             return t;
         });
-        StringBuilder sb = new StringBuilder();
-        String istr = new String(new char[indent]).replace("\0", " ");
-        sb.append("{");
-        if (indent > 0) {
-            sb.append("\n");
+        GsonBuilder gson = new GsonBuilder().disableHtmlEscaping();
+        if (pretty) {
+            gson = gson.setPrettyPrinting();
         }
-        Set<String> keySet = map.keySet();
-        int count = 0;
-        for (String key : keySet) {
-            sb.append(istr);
-            sb.append('"');
-            sb.append(JSONObject.escape(key));
-            sb.append("\":");
-            if (indent > 0) {
-                sb.append(" ");
-            }
-            Object val = map.get(key);
-            sb.append(JSONValue.toJSONString(val));
-            if (++count < keySet.size()) {
-                sb.append(",");
-            }
-            if (indent > 0) {
-                sb.append("\n");
-            }
-        }
-        sb.append("}");
-        return sb.toString();
+        return gson.create().toJson(map);
     }
 
     public String toYAML() {
@@ -1335,14 +1291,7 @@ public class MetadataInfo {
             if (e.getKey().startsWith("file.")) {
                 continue;
             }
-            // Skip "dc.dates" for now as loading them from PDF is broken in xmpbox <= 2.0.2
-            //if("dc.dates".equals(e.getKey())){
-            //	continue;
-            //}
-            // Skip "basic.label" for now as it cannot be loaded in jempbox <= 1.8.12
-            if ("basic.label".equals(e.getKey())) {
-                continue;
-            }
+
             Object t = get(e.getKey());
             Object o = other.get(e.getKey());
             FieldDescription fd = e.getValue().get(e.getValue().size() - 1);
@@ -1591,13 +1540,13 @@ public class MetadataInfo {
         });
     }
 
-    protected Object _getStructObject(String id, Map<String, List<FieldDescription>> mdFields, boolean parent, boolean toString, boolean useDefault, Object defaultValue) {
+    protected Object getStructObject(String id, Map<String, List<FieldDescription>> mdFields, boolean parent, boolean toString, boolean useDefault, Object defaultValue) {
         List<FieldDescription> fields = mdFields.get(id);
         if (fields == null || fields.size() == 0) {
             if (useDefault) {
                 return defaultValue;
             }
-            throw new RuntimeException("_getStructObject('" + id + "') No such field");
+            throw new RuntimeException("getStructObject: No field for '" + id + "'");
         }
         Object current = this;
         FieldDescription fieldD = null;
@@ -1624,23 +1573,23 @@ public class MetadataInfo {
     }
 
     public Object get(String id) {
-        return _getStructObject(id, _mdFields, false, false, false, null);
+        return getStructObject(id, _mdFields, false, false, false, null);
     }
 
     public String getString(String id) {
-        return (String) _getStructObject(id, _mdFields, false, true, false, null);
+        return (String) getStructObject(id, _mdFields, false, true, false, null);
     }
 
     public Object get(String id, Object defaultValue) {
-        return _getStructObject(id, _mdFields, false, false, true, defaultValue);
+        return getStructObject(id, _mdFields, false, false, true, defaultValue);
     }
 
     public String getString(String id, String defaultValue) {
-        return (String) _getStructObject(id, _mdFields, false, true, true, defaultValue);
+        return (String) getStructObject(id, _mdFields, false, true, true, defaultValue);
     }
 
     protected boolean _getObjectEnabled(String id) {
-        return (Boolean) _getStructObject(id, _mdEnabledFields, false, false, true, false);
+        return (Boolean) getStructObject(id, _mdEnabledFields, false, false, true, false);
     }
 
     protected void _setStructObject(String id, Object value, boolean append, boolean fromString, Map<String, List<FieldDescription>> mdFields) {
@@ -1648,7 +1597,7 @@ public class MetadataInfo {
         if (fields == null || fields.size() == 0) {
             throw new RuntimeException("_setStructObject('" + id + "') No such field");
         }
-        Object current = _getStructObject(id, mdFields, true, false, false, null);
+        Object current = getStructObject(id, mdFields, true, false, false, null);
         if (current == null) {
             throw new RuntimeException("_setStructObject('" + id + "') No such field");
         }

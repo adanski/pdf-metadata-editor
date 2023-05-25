@@ -1,11 +1,10 @@
 package app.pdfx;
 
 import net.miginfocom.swing.MigLayout;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClients;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.apache.commons.lang3.function.Failable;
 
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
@@ -14,15 +13,12 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,7 +70,7 @@ public class PreferencesWindow extends JDialog {
         setLocationRelativeTo(owner);
         long startTime = System.nanoTime();
 
-        final Future<HttpResponse> status = checkForUpdates();
+        final CompletableFuture<Response> updateCheckResponse = checkForUpdates();
         isWindows = System.getProperty("os.name").startsWith("Windows");
         this.prefs = prefs;
         if (defaultMetadata != null) {
@@ -246,25 +242,9 @@ public class PreferencesWindow extends JDialog {
         panel_2.setLayout(new MigLayout("", "[][]", "[growprio 50,grow][growprio 50,grow]"));
 
         JButton btnRegister = new JButton("Add to context menu");
-        btnRegister.addActionListener(e -> {
-            try {
-                WindowsRegisterContextMenu.register();
-            } catch (Exception e1) {
-                // StringWriter sw = new StringWriter();
-                // PrintWriter pw = new PrintWriter(sw);
-                // e1.printStackTrace(pw);
-                // JOptionPane.showMessageDialog(owner,
-                // "Failed to register context menu:\n" + e1.toString()
-                // +"\n" +sw.toString());
-                JOptionPane.showMessageDialog(owner, "Failed to register context menu:\n" + e1.toString());
-                e1.printStackTrace();
-            }
-
-        });
         panel_2.add(btnRegister, "cell 0 0,growx,aligny center");
 
         JButton btnUnregister = new JButton("Remove from context menu");
-        btnUnregister.addActionListener(e -> WindowsRegisterContextMenu.unregister());
 
         final JLabel lblNewLabel_1 = new JLabel("");
         panel_2.add(lblNewLabel_1, "cell 1 0 1 2");
@@ -483,64 +463,61 @@ public class PreferencesWindow extends JDialog {
         refresh();
         contentPane.doLayout();
 
-        if (status.isDone()) {
-            showUpdatesStatus(status);
-        } else {
-            (new Thread(() -> showUpdatesStatus(status))).start();
-        }
+        showUpdatesStatus(updateCheckResponse);
+
         updateLicense();
     }
 
-    private Future<HttpResponse> checkForUpdates() {
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.createDefault();
-        httpclient.start();
-        HttpHead request = new HttpHead("http://broken-by.me/download/pdf-metadata-editor/");
-        Future<HttpResponse> future = httpclient.execute(request, null);
-        return future;
+    private CompletableFuture<Response> checkForUpdates() {
+        OkHttpClient httpClient = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url("http://broken-by.me/download/pdf-metadata-editor/")
+                .build();
+        return CompletableFuture.supplyAsync(Failable.asSupplier(() -> httpClient.newCall(request).execute()));
     }
 
 
-    private void showUpdatesStatus(Future<HttpResponse> status) {
-        String versionMsg = "<h3 align=center>Cannot get version information </h3>";
-        try {
-            HttpResponse response = status.get();
+    private void showUpdatesStatus(CompletableFuture<Response> status) {
+        status.thenApplyAsync(response -> {
+            String versionMsg = "<h3 align=center>Cannot get version information </h3>";
+
             updateStatusLabel.setText("");
             String file = null;
-            for (Header header : response.getHeaders("Content-Disposition")) {
-                Matcher matcher = Pattern.compile("filename=\"([^\"]+)\"").matcher(header.getValue());
+            for (String header : response.headers("Content-Disposition")) {
+                Matcher matcher = Pattern.compile("filename=\"([^\"]+)\"").matcher(header);
                 while (matcher.find()) {
                     file = matcher.group(1);
                 }
             }
-            if (file != null) {
-                String[] installerPatterns = {
-                        "pdfxMetadataEditor-(\\d+)\\.(\\d+)\\.(\\d+)-installer.jar",
-                        "pdf-metadata-edit-(\\d+)\\.(\\d+)\\.(\\d+)-installer.jar",
-                };
-                Version.VersionTuple current = Version.get();
-                Version.VersionTuple latest = null;
-                for (String pattern : installerPatterns) {
-                    latest = new Version.VersionTuple(file, pattern);
-                    if (latest.parseSuccess) {
-                        break;
-                    }
-                }
-                if (current.cmp(latest) < 0) {
-                    versionMsg = "<h3 align=center>New version available: <a href='http://broken-by.me/pdf-metadata-editor/#download'>"
-                            + latest.getAsString() + "</a> , current: " + current.getAsString() + "</h3>";
-                    updateStatusLabel.setText("Newer version available:" + latest.getAsString());
-                } else {
-                    versionMsg = "<h3 align=center>Version " + current.getAsString() + " is the latest version</h3>";
+            if (file == null) {
+                return versionMsg;
+            }
+
+            String[] installerPatterns = {
+                    "pdfxMetadataEditor-(\\d+)\\.(\\d+)\\.(\\d+)-installer.jar",
+                    "pdf-metadata-edit-(\\d+)\\.(\\d+)\\.(\\d+)-installer.jar",
+            };
+            Version.VersionTuple current = Version.get();
+            Version.VersionTuple latest = null;
+            for (String pattern : installerPatterns) {
+                latest = new Version.VersionTuple(file, pattern);
+                if (latest.parseSuccess) {
+                    break;
                 }
             }
-        } catch (InterruptedException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        } catch (ExecutionException e1) {
-            versionMsg += "<h4 align=center>Error: " + e1.getCause().getLocalizedMessage() + "</h4>";
-        } finally {
+            if (current.cmp(latest) < 0) {
+                versionMsg = "<h3 align=center>New version available: <a href='http://broken-by.me/pdf-metadata-editor/#download'>"
+                        + latest.getAsString() + "</a> , current: " + current.getAsString() + "</h3>";
+                updateStatusLabel.setText("Newer version available:" + latest.getAsString());
+            } else {
+                versionMsg = "<h3 align=center>Version " + current.getAsString() + " is the latest version</h3>";
+            }
+
+            return versionMsg;
+        }).whenCompleteAsync((versionMsg, t) -> {
+            versionMsg += "<h4 align=center>Error: " + t.getLocalizedMessage() + "</h4>";
             txtpnDf.setText(aboutMsg + versionMsg);
-        }
+        });
     }
 
     public void save() {

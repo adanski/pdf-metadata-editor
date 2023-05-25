@@ -179,7 +179,7 @@ public class PDFMetadataEditBatch {
                     }
                     Writer out = new BufferedWriter(new OutputStreamWriter(
                             new FileOutputStream(outFile), "UTF8"));
-                    out.write(md.toJson(2));
+                    out.write(md.toJson(true));
                     out.close();
                     status.addStatus(file.getName(), outFile);
                 } catch (Exception e) {
