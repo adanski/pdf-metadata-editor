@@ -1,5 +1,6 @@
 package app.pdfx;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -58,7 +59,7 @@ public class TestDcDates {
         }
 
         // Read the DC dates field
-        PDDocument document = PDDocument.load(new FileInputStream(temp));
+        PDDocument document = Loader.loadPDF(temp);
         PDDocumentCatalog catalog = document.getDocumentCatalog();
         PDMetadata meta = catalog.getMetadata();
         XMPMetadata metadata = XmpParserProvider.get().parse(meta.createInputStream());

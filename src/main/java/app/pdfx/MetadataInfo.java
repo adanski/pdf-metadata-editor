@@ -12,7 +12,8 @@ import org.apache.xmpbox.schema.AdobePDFSchema;
 import org.apache.xmpbox.schema.DublinCoreSchema;
 import org.apache.xmpbox.schema.XMPBasicSchema;
 import org.apache.xmpbox.schema.XMPRightsManagementSchema;
-import org.apache.xmpbox.xml.DomXmpParser;
+import org.apache.xmpbox.type.BadFieldValueException;
+import org.apache.pdfbox.Loader;
 import org.apache.xmpbox.xml.XmpParsingException;
 import org.apache.xmpbox.xml.XmpSerializer;
 import org.yaml.snakeyaml.DumperOptions;
@@ -326,7 +327,7 @@ public class MetadataInfo {
         this.fileEnabled = new FileInfoEnabled();
     }
 
-    protected void loadFromPDF(PDDocument document) throws IOException, XmpParsingException {
+    protected void loadFromPDF(PDDocument document) throws IOException, XmpParsingException, BadFieldValueException {
         PDDocumentInformation info = document.getDocumentInformation();
 
         // Basic info
@@ -396,8 +397,7 @@ public class MetadataInfo {
             XMPRightsManagementSchema ri = metadata.getXMPRightsManagementSchema();
             if (ri != null) {
                 rights.certificate = ri.getCertificate();
-                // rights.marked  = ri.getMarked(); // getMarked() return false on null value
-                rights.marked = ri.getBooleanPropertyValue("xmpRights:Marked");
+                rights.marked = ri.getMarked();
                 rights.owner = ri.getOwners();
                 rights.usageTerms = ri.getUsageTerms();
                 rights.webStatement = ri.getWebStatement();
@@ -411,22 +411,19 @@ public class MetadataInfo {
 
     protected static String hrSizes[] = new String[]{"B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
 
-    public void loadFromPDF(File pdfFile) throws IOException, XmpParsingException {
-
+    public void loadFromPDF(File pdfFile) throws IOException, XmpParsingException, BadFieldValueException {
         loadPDFFileInfo(pdfFile);
 
-        PDDocument document = null;
         FileInputStream inputStream = new FileInputStream(pdfFile);
-        document = PDDocument.load(inputStream);
+        PDDocument document = Loader.loadPDF(inputStream);
         loadFromPDF(document);
 
-        if (document != null) {
-            try {
-                document.close();
-            } catch (Exception e) {
+        try {
+            document.close();
+        } catch (Exception e) {
 
-            }
         }
+
         inputStream.close();
     }
 
@@ -1045,10 +1042,8 @@ public class MetadataInfo {
     }
 
     public void saveAsPDF(File pdfFile, File newFile) throws Exception {
-        PDDocument document = null;
-
         FileInputStream inputStream = new FileInputStream(pdfFile);
-        document = PDDocument.load(inputStream);
+        PDDocument document = Loader.loadPDF(inputStream);
 
         saveToPDF(document, newFile == null ? pdfFile : newFile);
 
