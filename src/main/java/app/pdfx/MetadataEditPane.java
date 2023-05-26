@@ -13,12 +13,12 @@ import java.util.Calendar;
 
 public class MetadataEditPane {
 
-    public static interface FieldSetGet {
-        public void apply(Object field, FieldID anno);
+    public interface FieldSetGet {
+        void apply(Object field, FieldID anno);
     }
 
-    public static interface FieldEnabledCheckBox {
-        public void apply(JCheckBox field, FieldEnabled anno);
+    public interface FieldEnabledCheckBox {
+        void apply(JCheckBox field, FieldEnabled anno);
     }
 
     private static final long serialVersionUID = 6994489903939856136L;
@@ -108,8 +108,6 @@ public class MetadataEditPane {
     public JComboBox xmpRightsMarked;
     @FieldID(value = "rights.owner", type = FieldID.FieldType.TEXT)
     public JTextArea xmpRightsOwner;
-    @FieldID(value = "rights.copyright")
-    public JTextArea xmpRightsCopyright;
     @FieldID("rights.usageTerms")
     public JTextArea xmpRightsUsageTerms;
     @FieldID("rights.webStatement")
@@ -210,8 +208,6 @@ public class MetadataEditPane {
     public JCheckBox xmpRightsMarkedEnabled;
     @FieldEnabled("rights.owner")
     public JCheckBox xmpRightsOwnerEnabled;
-    @FieldEnabled("rights.copyright")
-    public JCheckBox xmpRightsCopyrightEnabled;
     @FieldEnabled("rights.usageTerms")
     public JCheckBox xmpRightsUsageTermsEnabled;
     @FieldEnabled("rights.webStatement")
@@ -1403,41 +1399,6 @@ public class MetadataEditPane {
         xmpRightsOwner.setWrapStyleWord(true);
         xmpRightsOwner.setLineWrap(true);
         xmpRightsOwner.setColumns(10);
-
-        JLabel lblRightsCopyright = new JLabel("Copyright");
-        GridBagConstraints gbc_lblRightsCopyright = new GridBagConstraints();
-        gbc_lblRightsCopyright.anchor = GridBagConstraints.EAST;
-        gbc_lblRightsCopyright.insets = new Insets(0, 0, 5, 5);
-        gbc_lblRightsCopyright.gridx = 0;
-        gbc_lblRightsCopyright.gridy = 3;
-        xmpRightsMetaPanel.add(lblRightsCopyright, gbc_lblRightsCopyright);
-
-        xmpRightsCopyrightEnabled = new JCheckBox("");
-        xmpRightsCopyrightEnabled.setEnabled(false);
-        xmpRightsCopyrightEnabled.setSelected(true);
-        GridBagConstraints gbc_xmpRightsCopyrightEnabled = new GridBagConstraints();
-        gbc_xmpRightsCopyrightEnabled.insets = new Insets(0, 0, 5, 5);
-        gbc_xmpRightsCopyrightEnabled.gridx = 1;
-        gbc_xmpRightsCopyrightEnabled.gridy = 3;
-        xmpRightsMetaPanel.add(xmpRightsCopyrightEnabled, gbc_xmpRightsCopyrightEnabled);
-
-        JScrollPane xmpRightsCopyrightScroll = new JScrollPane();
-        GridBagConstraints gbc_xmpRightsCopyright = new GridBagConstraints();
-        gbc_xmpRightsCopyright.weighty = 1.0;
-        gbc_xmpRightsCopyright.weightx = 1.0;
-        gbc_xmpRightsCopyright.anchor = GridBagConstraints.WEST;
-        gbc_xmpRightsCopyright.fill = GridBagConstraints.BOTH;
-        gbc_xmpRightsCopyright.insets = new Insets(0, 0, 5, 0);
-        gbc_xmpRightsCopyright.gridx = 2;
-        gbc_xmpRightsCopyright.gridy = 3;
-        xmpRightsMetaPanel.add(xmpRightsCopyrightScroll, gbc_xmpRightsCopyright);
-
-        xmpRightsCopyright = new JTextArea();
-        xmpRightsCopyrightScroll.setViewportView(xmpRightsCopyright);
-        xmpRightsCopyright.setWrapStyleWord(true);
-        xmpRightsCopyright.setLineWrap(true);
-        xmpRightsCopyright.setColumns(10);
-
 
         JLabel lblRightsUsageTerms = new JLabel("Usage Terms");
         GridBagConstraints gbc_lblRightsUsageTerms = new GridBagConstraints();
