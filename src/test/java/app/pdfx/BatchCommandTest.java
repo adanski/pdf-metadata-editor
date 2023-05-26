@@ -2,27 +2,17 @@ package app.pdfx;
 
 import app.pdfx.MetadataInfoTest.PMTuple;
 import app.pdfx.PDFMetadataEditBatch.ActionStatus;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BatchCommandTest {
 
-    @Before
-    public void setUp() {
-    }
-
-    @After
-    public void tearDown() {
-    }
-
-    static int NUM_FILES = 5;
+    static final int NUM_FILES = 5;
 
     @Test
     public void testClearAll() throws Exception {
@@ -45,7 +35,7 @@ public class BatchCommandTest {
             @Override
             public void addError(String filename, String error) {
                 System.out.println(error);
-                assertFalse(error, true);
+                fail(error);
             }
 
         });
@@ -79,7 +69,7 @@ public class BatchCommandTest {
             @Override
             public void addError(String filename, String error) {
                 System.out.println(error);
-                assertFalse(error, true);
+                fail(error);
             }
 
         });
@@ -118,7 +108,7 @@ public class BatchCommandTest {
             @Override
             public void addError(String filename, String error) {
                 System.out.println(error);
-                assertFalse(error, true);
+                fail(error);
             }
 
         });

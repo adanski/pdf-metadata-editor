@@ -3,6 +3,8 @@ package app.pdfx;
 import app.pdfx.CommandLine.ParseError;
 import app.pdfx.MdStruct.StructType;
 import com.google.gson.GsonBuilder;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
@@ -13,14 +15,15 @@ import org.apache.xmpbox.schema.DublinCoreSchema;
 import org.apache.xmpbox.schema.XMPBasicSchema;
 import org.apache.xmpbox.schema.XMPRightsManagementSchema;
 import org.apache.xmpbox.type.BadFieldValueException;
-import org.apache.pdfbox.Loader;
 import org.apache.xmpbox.xml.XmpParsingException;
 import org.apache.xmpbox.xml.XmpSerializer;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import javax.xml.transform.TransformerException;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -414,21 +417,12 @@ public class MetadataInfo {
     public void loadFromPDF(File pdfFile) throws IOException, XmpParsingException, BadFieldValueException {
         loadPDFFileInfo(pdfFile);
 
-        FileInputStream inputStream = new FileInputStream(pdfFile);
-        PDDocument document = Loader.loadPDF(inputStream);
-        loadFromPDF(document);
-
-        try {
-            document.close();
-        } catch (Exception e) {
-
+        try (PDDocument document = Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720))) {
+            loadFromPDF(document);
         }
-
-        inputStream.close();
     }
 
-
-    public void loadPDFFileInfo(File pdfFile) throws FileNotFoundException, IOException {
+    public void loadPDFFileInfo(File pdfFile) throws IOException {
         file.fullPath = pdfFile.getAbsolutePath();
         file.nameWithExt = pdfFile.getName();
         BasicFileAttributes attrs = Files.readAttributes(pdfFile.toPath(), BasicFileAttributes.class);
@@ -1042,19 +1036,9 @@ public class MetadataInfo {
     }
 
     public void saveAsPDF(File pdfFile, File newFile) throws Exception {
-        FileInputStream inputStream = new FileInputStream(pdfFile);
-        PDDocument document = Loader.loadPDF(inputStream);
-
-        saveToPDF(document, newFile == null ? pdfFile : newFile);
-
-        if (document != null) {
-            try {
-                document.close();
-            } catch (Exception e) {
-
-            }
+        try (PDDocument document = Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720))) {
+            saveToPDF(document, newFile == null ? pdfFile : newFile);
         }
-        inputStream.close();
     }
 
     public void copyDocToXMP() {

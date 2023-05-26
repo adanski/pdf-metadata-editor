@@ -1,11 +1,9 @@
 package app.pdfx;
 
 import org.apache.xmpbox.XMPMetadata;
-import org.apache.xmpbox.xml.DomXmpParser;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestPrismNamespace {
-
 
     @Test
     public void testPrism() throws Exception {

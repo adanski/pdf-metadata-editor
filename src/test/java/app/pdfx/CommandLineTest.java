@@ -1,14 +1,14 @@
 package app.pdfx;
 
 import app.pdfx.CommandLine.ParseError;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CommandLineTest {
 
@@ -26,23 +26,21 @@ public class CommandLineTest {
 
     @Test
     public void testValid() throws ParseError {
-        CommandLine c;
-        c = CommandLine.parse(new String[]{
+        CommandLine c = CommandLine.parse(new String[]{
                 "-nogui", "edit", "--", "file1", "file2"
         });
         assertNotNull(c);
         assertTrue(c.noGui);
         assertTrue(c.command.is("edit"));
-        assertTrue(c.fileList.equals(Arrays.asList("file1", "file2")));
+        assertEquals(c.fileList, Arrays.asList("file1", "file2"));
     }
 
     @Test
     public void testClear() throws ParseError {
-        CommandLine c;
         List<String> args = new ArrayList<String>();
         args.add("clear");
         args.addAll(mdFieldList);
-        c = CommandLine.parse(args);
+        CommandLine c = CommandLine.parse(args);
         assertNotNull(c);
         assertFalse(c.noGui);
         assertNotNull(c.command);
@@ -55,11 +53,10 @@ public class CommandLineTest {
 
     @Test
     public void testClearNone() throws ParseError {
-        CommandLine c;
         List<String> args = new ArrayList<String>();
         args.add("clear");
         args.add("none");
-        c = CommandLine.parse(args);
+        CommandLine c = CommandLine.parse(args);
         assertNotNull(c);
         assertFalse(c.noGui);
         assertNotNull(c.command);
@@ -72,11 +69,10 @@ public class CommandLineTest {
 
     @Test
     public void testClearAll() throws ParseError {
-        CommandLine c;
         List<String> args = new ArrayList<String>();
         args.add("clear");
         args.add("all");
-        c = CommandLine.parse(args);
+        CommandLine c = CommandLine.parse(args);
         assertNotNull(c);
         assertFalse(c.noGui);
         assertNotNull(c.command);
@@ -89,12 +85,11 @@ public class CommandLineTest {
 
     @Test
     public void testClearSome() throws ParseError {
-        CommandLine c;
         List<String> args = new ArrayList<String>();
         args.add("clear");
         args.add("all");
         args.add("!doc.title");
-        c = CommandLine.parse(args);
+        CommandLine c = CommandLine.parse(args);
         assertNotNull(c);
         assertFalse(c.noGui);
         assertNotNull(c.command);
@@ -133,11 +128,10 @@ public class CommandLineTest {
             }
         }
 
-        CommandLine c;
         List<String> args = new ArrayList<String>();
         args.add("edit");
         args.addAll(genList);
-        c = CommandLine.parse(args);
+        CommandLine c = CommandLine.parse(args);
         assertNotNull(c);
         assertFalse(c.noGui);
         assertNotNull(c.command);
@@ -162,8 +156,7 @@ public class CommandLineTest {
 
     @Test
     public void testValid2() throws ParseError {
-        CommandLine c;
-        c = CommandLine.parse(new String[]{
+        CommandLine c = CommandLine.parse(new String[]{
                 "doc.title=title"
         });
         assertNotNull(c);
@@ -172,20 +165,24 @@ public class CommandLineTest {
         assertEquals(c.params.metadata.doc.title, "title");
     }
 
-    @Test(expected = ParseError.class)
-    public void testInvalid1() throws ParseError {
-        CommandLine c;
-        c = CommandLine.parse(new String[]{
-                "--something", "editv", "doc.creationDate"
+    @Test
+    public void testInvalid1() {
+        assertThrows(ParseError.class, () -> {
+            CommandLine c = CommandLine.parse(new String[]{
+                    "--something", "editv", "doc.creationDate"
+            });
         });
+
     }
 
-    @Test(expected = ParseError.class)
-    public void testInvalid2() throws ParseError {
-        CommandLine c;
-        c = CommandLine.parse(new String[]{
-                "--renameTemplate"
+    @Test
+    public void testInvalid2() {
+        assertThrows(ParseError.class, () -> {
+            CommandLine c = CommandLine.parse(new String[]{
+                    "--renameTemplate"
+            });
         });
+
     }
 
 }

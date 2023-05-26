@@ -7,18 +7,16 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.schema.DublinCoreSchema;
-import org.apache.xmpbox.xml.DomXmpParser;
 import org.apache.xmpbox.xml.XmpSerializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.util.Calendar;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author zaro
@@ -34,8 +32,7 @@ public class TestDcDates {
         Calendar cal = Calendar.getInstance();
 
         // Create empty document
-        PDDocument doc = new PDDocument();
-        try {
+        try (PDDocument doc = new PDDocument()) {
             // a valid PDF document requires at least one page
             PDPage blankPage = new PDPage();
             doc.addPage(blankPage);
@@ -54,13 +51,13 @@ public class TestDcDates {
             catalog.setMetadata(metadataStream);
 
             doc.save(temp);
-        } finally {
-            doc.close();
         }
 
         // Read the DC dates field
-        PDDocument document = Loader.loadPDF(temp);
-        PDDocumentCatalog catalog = document.getDocumentCatalog();
+        PDDocumentCatalog catalog;
+        try (PDDocument document = Loader.loadPDF(temp)) {
+            catalog = document.getDocumentCatalog();
+        }
         PDMetadata meta = catalog.getMetadata();
         XMPMetadata metadata = XmpParserProvider.get().parse(meta.createInputStream());
         DublinCoreSchema dcS = metadata.getDublinCoreSchema();
