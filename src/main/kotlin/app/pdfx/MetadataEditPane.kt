@@ -21,7 +21,6 @@ public class MetadataEditPane {
         void apply(JCheckBox field, FieldEnabled anno);
     }
 
-    private static final long serialVersionUID = 6994489903939856136L;
     public JPanel basicMetaPanel;
 
     @FieldID("doc.title")
@@ -1705,9 +1704,9 @@ public class MetadataEditPane {
 
     private void objectToField(JSpinner field, Object o) {
         if (o instanceof Integer) {
-            field.setValue((Integer) o);
+            field.setValue(o);
         } else if (o == null) {
-            field.setValue((Integer) 0);
+            field.setValue(0);
         } else {
             RuntimeException e = new RuntimeException("Cannot store non-Integerr object in JSpinner");
             e.printStackTrace();
@@ -1717,18 +1716,16 @@ public class MetadataEditPane {
 
 
     public static void main(String[] args) {
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                try {
-                    MetadataEditPane pane = new MetadataEditPane();
-                    JFrame frame = new JFrame();
-                    frame.getContentPane().add(pane.tabbedaPane);
-                    frame.setVisible(true);
-                    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                    frame.setSize(640, 480);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        EventQueue.invokeLater(() -> {
+            try {
+                MetadataEditPane pane = new MetadataEditPane();
+                JFrame frame = new JFrame();
+                frame.getContentPane().add(pane.tabbedaPane);
+                frame.setVisible(true);
+                frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                frame.setSize(640, 480);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
     }
