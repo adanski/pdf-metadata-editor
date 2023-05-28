@@ -1,18 +1,13 @@
-package app.pdfx;
+package app.pdfx
 
-import app.pdfx.CommandLine.ParseError;
-import org.junit.jupiter.api.Test;
+import app.pdfx.CommandLine.ParseError
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
+import java.util.*
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-public class CommandLineTest {
-
-    List<String> mdFieldList = Arrays.asList(new String[]{
+class CommandLineTest {
+    var mdFieldList = Arrays.asList(
+        *arrayOf(
             "doc.title", "doc.author", "doc.subject", "doc.keywords",
             "doc.creator", "doc.producer", "doc.creationDate", "doc.modificationDate", "doc.trapped",
             "basic.creatorTool", "basic.createDate", "basic.modifyDate", "basic.baseURL",
@@ -21,168 +16,178 @@ public class CommandLineTest {
             "dc.description", "dc.creators", "dc.contributors", "dc.coverage", "dc.dates",
             "dc.format", "dc.identifier", "dc.languages", "dc.publishers", "dc.relationships",
             "dc.rights", "dc.source", "dc.subjects", "dc.types"
-    });
-
+        )
+    )
 
     @Test
-    public void testValid() throws ParseError {
-        CommandLine c = CommandLine.parse(new String[]{
+    @Throws(ParseError::class)
+    fun testValid() {
+        val c = CommandLine.parse(
+            arrayOf(
                 "-nogui", "edit", "--", "file1", "file2"
-        });
-        assertNotNull(c);
-        assertTrue(c.noGui);
-        assertTrue(c.command.is("edit"));
-        assertEquals(c.fileList, Arrays.asList("file1", "file2"));
+            )
+        )
+        Assertions.assertNotNull(c)
+        Assertions.assertTrue(c.noGui)
+        Assertions.assertTrue(c.command.`is`("edit"))
+        Assertions.assertEquals(c.fileList, mutableListOf("file1", "file2"))
     }
 
     @Test
-    public void testClear() throws ParseError {
-        List<String> args = new ArrayList<String>();
-        args.add("clear");
-        args.addAll(mdFieldList);
-        CommandLine c = CommandLine.parse(args);
-        assertNotNull(c);
-        assertFalse(c.noGui);
-        assertNotNull(c.command);
-        assertTrue(c.command.is("clear"));
-        for (String field : mdFieldList) {
-            assertTrue(c.params.metadata.isEnabled(field));
+    @Throws(ParseError::class)
+    fun testClear() {
+        val args: MutableList<String> = ArrayList()
+        args.add("clear")
+        args.addAll(mdFieldList)
+        val c = CommandLine.parse(args)
+        Assertions.assertNotNull(c)
+        Assertions.assertFalse(c.noGui)
+        Assertions.assertNotNull(c.command)
+        Assertions.assertTrue(c.command.`is`("clear"))
+        for (field in mdFieldList) {
+            Assertions.assertTrue(c.params.metadata.isEnabled(field))
         }
-        assertTrue(c.fileList.isEmpty());
+        Assertions.assertTrue(c.fileList.isEmpty())
     }
 
     @Test
-    public void testClearNone() throws ParseError {
-        List<String> args = new ArrayList<String>();
-        args.add("clear");
-        args.add("none");
-        CommandLine c = CommandLine.parse(args);
-        assertNotNull(c);
-        assertFalse(c.noGui);
-        assertNotNull(c.command);
-        assertTrue(c.command.is("clear"));
-        for (String field : mdFieldList) {
-            assertFalse(c.params.metadata.isEnabled(field));
+    @Throws(ParseError::class)
+    fun testClearNone() {
+        val args: MutableList<String> = ArrayList()
+        args.add("clear")
+        args.add("none")
+        val c = CommandLine.parse(args)
+        Assertions.assertNotNull(c)
+        Assertions.assertFalse(c.noGui)
+        Assertions.assertNotNull(c.command)
+        Assertions.assertTrue(c.command.`is`("clear"))
+        for (field in mdFieldList) {
+            Assertions.assertFalse(c.params.metadata.isEnabled(field))
         }
-        assertTrue(c.fileList.isEmpty());
+        Assertions.assertTrue(c.fileList.isEmpty())
     }
 
     @Test
-    public void testClearAll() throws ParseError {
-        List<String> args = new ArrayList<String>();
-        args.add("clear");
-        args.add("all");
-        CommandLine c = CommandLine.parse(args);
-        assertNotNull(c);
-        assertFalse(c.noGui);
-        assertNotNull(c.command);
-        assertTrue(c.command.is("clear"));
-        for (String field : mdFieldList) {
-            assertTrue(c.params.metadata.isEnabled(field));
+    @Throws(ParseError::class)
+    fun testClearAll() {
+        val args: MutableList<String> = ArrayList()
+        args.add("clear")
+        args.add("all")
+        val c = CommandLine.parse(args)
+        Assertions.assertNotNull(c)
+        Assertions.assertFalse(c.noGui)
+        Assertions.assertNotNull(c.command)
+        Assertions.assertTrue(c.command.`is`("clear"))
+        for (field in mdFieldList) {
+            Assertions.assertTrue(c.params.metadata.isEnabled(field))
         }
-        assertTrue(c.fileList.isEmpty());
+        Assertions.assertTrue(c.fileList.isEmpty())
     }
 
     @Test
-    public void testClearSome() throws ParseError {
-        List<String> args = new ArrayList<String>();
-        args.add("clear");
-        args.add("all");
-        args.add("!doc.title");
-        CommandLine c = CommandLine.parse(args);
-        assertNotNull(c);
-        assertFalse(c.noGui);
-        assertNotNull(c.command);
-        assertTrue(c.command.is("clear"));
-        for (String field : mdFieldList) {
-            if (field.equals("doc.title")) {
-                assertFalse(c.params.metadata.isEnabled(field));
+    @Throws(ParseError::class)
+    fun testClearSome() {
+        val args: MutableList<String> = ArrayList()
+        args.add("clear")
+        args.add("all")
+        args.add("!doc.title")
+        val c = CommandLine.parse(args)
+        Assertions.assertNotNull(c)
+        Assertions.assertFalse(c.noGui)
+        Assertions.assertNotNull(c.command)
+        Assertions.assertTrue(c.command.`is`("clear"))
+        for (field in mdFieldList) {
+            if (field == "doc.title") {
+                Assertions.assertFalse(c.params.metadata.isEnabled(field))
             } else {
-                assertTrue(c.params.metadata.isEnabled(field));
+                Assertions.assertTrue(c.params.metadata.isEnabled(field))
             }
         }
-        assertTrue(c.fileList.isEmpty());
+        Assertions.assertTrue(c.fileList.isEmpty())
     }
 
     @Test
-    public void testEditAll() throws ParseError {
-        Calendar cal = Calendar.getInstance();
-        cal.clear();
-        cal.set(2012, 03, 03);
-        String dateString = "2012-04-03";
-        List<String> genList = new ArrayList<String>();
-        MetadataInfo md = new MetadataInfo();
-        for (String field : mdFieldList) {
+    @Throws(ParseError::class)
+    fun testEditAll() {
+        val cal = Calendar.getInstance()
+        cal.clear()
+        cal[2012, 3] = 3
+        val dateString = "2012-04-03"
+        val genList: MutableList<String> = ArrayList()
+        val md = MetadataInfo()
+        for (field in mdFieldList) {
             if (field.endsWith("Date")) {
-                genList.add(field + "=" + dateString);
+                genList.add("$field=$dateString")
             } else if (field.endsWith(".dates")) {
-                genList.add(field + "=" + dateString);
-                genList.add(field + "=" + dateString);
+                genList.add("$field=$dateString")
+                genList.add("$field=$dateString")
             } else if (field.endsWith(".rating")) {
-                genList.add(field + "=17");
-            } else if (md.getFieldDescription(field).isList) {
-                genList.add(field + "=" + field);
-                genList.add(field + "=" + field);
+                genList.add("$field=17")
+            } else if (MetadataInfo.getFieldDescription(field).isList) {
+                genList.add("$field=$field")
+                genList.add("$field=$field")
             } else {
-                genList.add(field + "=" + field);
+                genList.add("$field=$field")
             }
         }
-
-        List<String> args = new ArrayList<String>();
-        args.add("edit");
-        args.addAll(genList);
-        CommandLine c = CommandLine.parse(args);
-        assertNotNull(c);
-        assertFalse(c.noGui);
-        assertNotNull(c.command);
-        assertTrue(c.command.is("edit"));
-        for (String field : mdFieldList) {
-            assertTrue(c.params.metadata.isEnabled(field));
+        val args: MutableList<String> = ArrayList()
+        args.add("edit")
+        args.addAll(genList)
+        val c = CommandLine.parse(args)
+        Assertions.assertNotNull(c)
+        Assertions.assertFalse(c.noGui)
+        Assertions.assertNotNull(c.command)
+        Assertions.assertTrue(c.command.`is`("edit"))
+        for (field in mdFieldList) {
+            Assertions.assertTrue(c.params.metadata.isEnabled(field))
             if (field.endsWith("Date")) {
-                assertEquals(cal, ((Calendar) c.params.metadata.get(field)));
+                Assertions.assertEquals(cal, c.params.metadata[field] as Calendar)
             } else if (field.endsWith(".dates")) {
-                assertEquals(Arrays.asList(cal, cal), c.params.metadata.get(field));
+                Assertions.assertEquals(Arrays.asList(cal, cal), c.params.metadata[field])
             } else if (field.endsWith(".rating")) {
-                assertEquals(17, c.params.metadata.get(field));
-            } else if (md.getFieldDescription(field).isList) {
-                assertEquals(Arrays.asList(field, field), c.params.metadata.get(field));
+                Assertions.assertEquals(17, c.params.metadata[field])
+            } else if (MetadataInfo.getFieldDescription(field).isList) {
+                Assertions.assertEquals(Arrays.asList(field, field), c.params.metadata[field])
             } else {
-                assertEquals(field, c.params.metadata.get(field));
+                Assertions.assertEquals(field, c.params.metadata[field])
             }
         }
-        assertTrue(c.fileList.isEmpty());
+        Assertions.assertTrue(c.fileList.isEmpty())
     }
 
-
     @Test
-    public void testValid2() throws ParseError {
-        CommandLine c = CommandLine.parse(new String[]{
+    @Throws(ParseError::class)
+    fun testValid2() {
+        val c = CommandLine.parse(
+            arrayOf(
                 "doc.title=title"
-        });
-        assertNotNull(c);
-        assertFalse(c.noGui);
-        assertNull(c.command);
-        assertEquals(c.params.metadata.doc.title, "title");
+            )
+        )
+        Assertions.assertNotNull(c)
+        Assertions.assertFalse(c.noGui)
+        Assertions.assertNull(c.command)
+        Assertions.assertEquals(c.params.metadata.doc.title, "title")
     }
 
     @Test
-    public void testInvalid1() {
-        assertThrows(ParseError.class, () -> {
-            CommandLine c = CommandLine.parse(new String[]{
+    fun testInvalid1() {
+        Assertions.assertThrows(ParseError::class.java) {
+            val c = CommandLine.parse(
+                arrayOf(
                     "--something", "editv", "doc.creationDate"
-            });
-        });
-
+                )
+            )
+        }
     }
 
     @Test
-    public void testInvalid2() {
-        assertThrows(ParseError.class, () -> {
-            CommandLine c = CommandLine.parse(new String[]{
+    fun testInvalid2() {
+        Assertions.assertThrows(ParseError::class.java) {
+            val c = CommandLine.parse(
+                arrayOf(
                     "--renameTemplate"
-            });
-        });
-
+                )
+            )
+        }
     }
-
 }

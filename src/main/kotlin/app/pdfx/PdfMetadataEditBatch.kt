@@ -1,273 +1,247 @@
-package app.pdfx;
+package app.pdfx
 
-import java.io.*;
-import java.nio.file.Files;
-import java.util.List;
+import app.pdfx.CsvMetadata.readFile
+import java.io.*
+import java.nio.file.Files
+import java.util.*
 
-public class PDFMetadataEditBatch {
-
-    BatchOperationParameters params;
-
-    public PDFMetadataEditBatch() {
-        this(null);
-    }
-
-    public PDFMetadataEditBatch(BatchOperationParameters params) {
-        this.params = params;
-    }
-
-    public interface ActionStatus {
-        void addStatus(String filename, String message);
-
-        void addError(String filename, String error);
+class PDFMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationParameters? = null) {
+    interface ActionStatus {
+        fun addStatus(filename: String?, message: String?)
+        fun addError(filename: String?, error: String?)
     }
 
     interface FileAction {
-        void apply(File file);
-
-        void ignore(File file);
+        fun apply(file: File)
+        fun ignore(file: File)
     }
 
-    public void forFiles(File file, FileFilter filter, FileAction action) {
-        if (file.isFile()) {
+    fun forFiles(file: File, filter: FileFilter?, action: FileAction) {
+        if (file.isFile) {
             if (isPdfExtension(file)) {
-                action.apply(file);
+                action.apply(file)
             } else {
-                action.ignore(file);
+                action.ignore(file)
             }
-        } else if (file.isDirectory()) {
-            for (File f : file.listFiles(filter)) {
-                action.apply(f);
+        } else if (file.isDirectory) {
+            for (f in file.listFiles(filter)) {
+                action.apply(f)
             }
         } else {
-            action.ignore(file);
+            action.ignore(file)
         }
     }
 
-    public void forFiles(List<File> files, FileFilter filter, FileAction action) {
-        for (File file : files) {
-            forFiles(file, filter, action);
+    fun forFiles(files: List<File>, filter: FileFilter?, action: FileAction) {
+        for (file in files) {
+            forFiles(file, filter, action)
         }
     }
 
-    protected FileFilter defaultFileFilter = PDFMetadataEditBatch::isPdfExtension;
-
-    public void forFiles(File file, FileAction action) {
-        forFiles(file, defaultFileFilter, action);
+    protected var defaultFileFilter = FileFilter { file: File -> isPdfExtension(file) }
+    fun forFiles(file: File, action: FileAction) {
+        forFiles(file, defaultFileFilter, action)
     }
 
-    public void forFiles(List<File> files, FileAction action) {
-        forFiles(files, defaultFileFilter, action);
+    fun forFiles(files: List<File>, action: FileAction) {
+        forFiles(files, defaultFileFilter, action)
     }
 
-    public static boolean isPdfExtension(File file) {
-        return file.getName().toLowerCase().endsWith(".pdf");
-    }
-
-    public void edit(List<File> files, final ActionStatus status) {
+    fun edit(files: List<File>, status: ActionStatus) {
         if (params == null) {
-            status.addError("*", "No metadata defined");
-            return;
+            status.addError("*", "No metadata defined")
+            return
         }
-        forFiles(files, new FileAction() {
-
-            @Override
-            public void apply(File file) {
-                MetadataInfo mdParams = params != null ? params.metadata : new MetadataInfo();
+        forFiles(files, object : FileAction {
+            override fun apply(file: File) {
+                val mdParams = if (params != null) params!!.metadata else MetadataInfo()
                 try {
-                    MetadataInfo mdFile = new MetadataInfo();
-                    mdFile.loadFromPDF(file);
-                    MetadataInfo md = mdParams.clone();
-                    md.expand(mdFile);
-                    md.saveAsPDF(file);
-                    status.addStatus(file.getName(), "Done");
-                } catch (Exception e) {
+                    val mdFile = MetadataInfo()
+                    mdFile.loadFromPDF(file)
+                    val md = mdParams.clone()
+                    md.expand(mdFile)
+                    md.saveAsPDF(file)
+                    status.addStatus(file.name, "Done")
+                } catch (e: Exception) {
                     // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    status.addError(file.getName(), "Failed: " + e.toString());
+                    e.printStackTrace()
+                    status.addError(file.name, "Failed: $e")
                 }
             }
 
-            @Override
-            public void ignore(File file) {
-                status.addError(file.getName(), "Invalid file:" + file.getAbsolutePath());
+            override fun ignore(file: File) {
+                status.addError(file.name, "Invalid file:" + file.absolutePath)
             }
-        });
+        })
     }
 
-    public void clear(List<File> files, final ActionStatus status) {
-        forFiles(files, new FileAction() {
-
-            @Override
-            public void apply(File file) {
-                MetadataInfo md = params != null ? params.metadata : new MetadataInfo();
+    fun clear(files: List<File>, status: ActionStatus) {
+        forFiles(files, object : FileAction {
+            override fun apply(file: File) {
+                val md = if (params != null) params!!.metadata else MetadataInfo()
                 try {
-                    md.saveAsPDF(file);
-                    status.addStatus(file.getName(), "Cleared");
-                } catch (Exception e) {
+                    md.saveAsPDF(file)
+                    status.addStatus(file.name, "Cleared")
+                } catch (e: Exception) {
                     // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    status.addError(file.getName(), "Failed: " + e.toString());
+                    e.printStackTrace()
+                    status.addError(file.name, "Failed: $e")
                 }
             }
 
-            @Override
-            public void ignore(File file) {
-                status.addError(file.getName(), "Invalid file:" + file.getAbsolutePath());
+            override fun ignore(file: File) {
+                status.addError(file.name, "Invalid file:" + file.absolutePath)
             }
-        });
+        })
     }
 
-    public void rename(List<File> files, final ActionStatus status) {
-        String template = null;
+    fun rename(files: List<File>, status: ActionStatus) {
+        var template: String? = null
         if (params != null) {
-            template = params.renameTemplate;
-            if (!template.toLowerCase().endsWith(".pdf"))
-                template += ".pdf";
+            template = params!!.renameTemplate
+            if (!template!!.lowercase(Locale.getDefault()).endsWith(".pdf")) template += ".pdf"
         }
         if (template == null) {
-            status.addError("*", "Rename template not configured");
-            return;
+            status.addError("*", "Rename template not configured")
+            return
         }
-        final TemplateString ts = new TemplateString(template);
-
-        forFiles(files, new FileAction() {
-
-            @Override
-            public void apply(File file) {
+        val ts = TemplateString(template)
+        forFiles(files, object : FileAction {
+            override fun apply(file: File) {
                 try {
-                    MetadataInfo md = new MetadataInfo();
-                    md.loadFromPDF(file);
-                    String toName = ts.process(md);
-                    String toDir = file.getParent();
-                    File to = new File(toDir, toName);
+                    val md = MetadataInfo()
+                    md.loadFromPDF(file)
+                    val toName = ts.process(md)
+                    val toDir = file.parent
+                    val to = File(toDir, toName)
                     if (to.exists()) {
-                        status.addError(file.getName(), "Destination file already exists:  " + to.getName());
+                        status.addError(file.name, "Destination file already exists:  " + to.name)
                     } else {
                         try {
-                            Files.move(file.toPath(), to.toPath());
-                            status.addStatus(file.getName(), to.getName());
-                        } catch (IOException e) {
-                            status.addError(file.getName(), "Rename failed with " + to.getName() + " : " + e);
+                            Files.move(file.toPath(), to.toPath())
+                            status.addStatus(file.name, to.name)
+                        } catch (e: IOException) {
+                            status.addError(file.name, "Rename failed with " + to.name + " : " + e)
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    status.addError(file.getName(), "Failed: " + e.toString());
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    status.addError(file.name, "Failed: $e")
                 }
             }
 
-            @Override
-            public void ignore(File file) {
-                status.addError(file.getName(), "Invalid file:" + file.getAbsolutePath());
+            override fun ignore(file: File) {
+                status.addError(file.name, "Invalid file:" + file.absolutePath)
             }
-        });
+        })
     }
 
-
-    public void tojson(List<File> files, final ActionStatus status) {
-        forFiles(files, new FileAction() {
-
-            @Override
-            public void apply(File file) {
+    fun tojson(files: List<File>, status: ActionStatus) {
+        forFiles(files, object : FileAction {
+            override fun apply(file: File) {
                 try {
-                    MetadataInfo md = new MetadataInfo();
-                    md.loadFromPDF(file);
-                    String outFile = file.getAbsolutePath().replaceFirst("\\.[Pp][Dd][Ff]$", ".json");
+                    val md = MetadataInfo()
+                    md.loadFromPDF(file)
+                    var outFile = file.absolutePath.replaceFirst("\\.[Pp][Dd][Ff]$".toRegex(), ".json")
                     if (!outFile.endsWith(".json")) {
-                        outFile = file.getAbsolutePath() + ".json";
+                        outFile = file.absolutePath + ".json"
                     }
-                    Writer out = new BufferedWriter(new OutputStreamWriter(
-                            new FileOutputStream(outFile), "UTF8"));
-                    out.write(md.toJson(true));
-                    out.close();
-                    status.addStatus(file.getName(), outFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    status.addError(file.getName(), "Failed: " + e.toString());
+                    val out: Writer = BufferedWriter(
+                        OutputStreamWriter(
+                            FileOutputStream(outFile), "UTF8"
+                        )
+                    )
+                    out.write(md.toJson(true))
+                    out.close()
+                    status.addStatus(file.name, outFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    status.addError(file.name, "Failed: $e")
                 }
             }
 
-            @Override
-            public void ignore(File file) {
-                status.addError(file.getName(), "Invalid file:" + file.getAbsolutePath());
+            override fun ignore(file: File) {
+                status.addError(file.name, "Invalid file:" + file.absolutePath)
             }
-        });
+        })
     }
 
-    public void toyaml(List<File> files, final ActionStatus status) {
-        forFiles(files, new FileAction() {
-
-            @Override
-            public void apply(File file) {
+    fun toyaml(files: List<File>, status: ActionStatus) {
+        forFiles(files, object : FileAction {
+            override fun apply(file: File) {
                 try {
-                    MetadataInfo md = new MetadataInfo();
-                    md.loadFromPDF(file);
-                    String outFile = file.getAbsolutePath().replaceFirst("\\.[Pp][Dd][Ff]$", ".yaml");
+                    val md = MetadataInfo()
+                    md.loadFromPDF(file)
+                    var outFile = file.absolutePath.replaceFirst("\\.[Pp][Dd][Ff]$".toRegex(), ".yaml")
                     if (!outFile.endsWith(".yaml")) {
-                        outFile = file.getAbsolutePath() + ".yaml";
+                        outFile = file.absolutePath + ".yaml"
                     }
-                    Writer out = new BufferedWriter(new OutputStreamWriter(
-                            new FileOutputStream(outFile), "UTF8"));
-                    out.write(md.toYAML(true));
-                    out.close();
-                    status.addStatus(file.getName(), outFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    status.addError(file.getName(), "Failed: " + e.toString());
+                    val out: Writer = BufferedWriter(
+                        OutputStreamWriter(
+                            FileOutputStream(outFile), "UTF8"
+                        )
+                    )
+                    out.write(md.toYAML(true))
+                    out.close()
+                    status.addStatus(file.name, outFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    status.addError(file.name, "Failed: $e")
                 }
             }
 
-            @Override
-            public void ignore(File file) {
-                status.addError(file.getName(), "Invalid file:" + file.getAbsolutePath());
+            override fun ignore(file: File) {
+                status.addError(file.name, "Invalid file:" + file.absolutePath)
             }
-        });
+        })
     }
 
-    public void fromcsv(List<File> csvFiles, final ActionStatus status) {
-        for (File csvFile : csvFiles) {
+    fun fromcsv(csvFiles: List<File>, status: ActionStatus) {
+        for (csvFile in csvFiles) {
             try {
-                List<MetadataInfo> actionList = CsvMetadata.readFile(csvFile);
-                for (MetadataInfo mdParams : actionList) {
-                    File file = new File(mdParams.file.fullPath);
+                val actionList = readFile(csvFile)
+                for (mdParams in actionList) {
+                    val file = File(mdParams.file!!.fullPath)
                     try {
-                        MetadataInfo mdFile = new MetadataInfo();
-                        mdFile.loadFromPDF(file);
-                        MetadataInfo md = mdParams.clone();
-                        md.expand(mdFile);
-                        md.saveAsPDF(file);
-                        status.addStatus(file.getName(), "Done");
-                    } catch (Exception e) {
+                        val mdFile = MetadataInfo()
+                        mdFile.loadFromPDF(file)
+                        val md = mdParams.clone()
+                        md.expand(mdFile)
+                        md.saveAsPDF(file)
+                        status.addStatus(file.name, "Done")
+                    } catch (e: Exception) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
-                        status.addError(file.getName(), "Failed: " + e.toString());
+                        e.printStackTrace()
+                        status.addError(file.name, "Failed: $e")
                     }
                 }
-
-            } catch (Exception e) {
-                status.addError(csvFile.getName(), "Failed: " + e.toString());
+            } catch (e: Exception) {
+                status.addError(csvFile.name, "Failed: $e")
             }
         }
     }
 
-
-    public void runCommand(CommandDescription command, List<File> batchFileList, ActionStatus actionStatus) {
-        if (command.is("rename")) {
-            rename(batchFileList, actionStatus);
-        } else if (command.is("edit")) {
-            edit(batchFileList, actionStatus);
-        } else if (command.is("clear")) {
-            clear(batchFileList, actionStatus);
-        } else if (command.is("tojson")) {
-            tojson(batchFileList, actionStatus);
-        } else if (command.is("toyaml")) {
-            toyaml(batchFileList, actionStatus);
-        } else if (command.is("fromcsv")) {
-            fromcsv(batchFileList, actionStatus);
+    fun runCommand(command: CommandDescription, batchFileList: List<File>, actionStatus: ActionStatus) {
+        if (command.`is`("rename")) {
+            rename(batchFileList, actionStatus)
+        } else if (command.`is`("edit")) {
+            edit(batchFileList, actionStatus)
+        } else if (command.`is`("clear")) {
+            clear(batchFileList, actionStatus)
+        } else if (command.`is`("tojson")) {
+            tojson(batchFileList, actionStatus)
+        } else if (command.`is`("toyaml")) {
+            toyaml(batchFileList, actionStatus)
+        } else if (command.`is`("fromcsv")) {
+            fromcsv(batchFileList, actionStatus)
         } else {
-            actionStatus.addError("*", "Invalid command");
+            actionStatus.addError("*", "Invalid command")
         }
     }
 
+    companion object {
+        fun isPdfExtension(file: File): Boolean {
+            return file.name.lowercase(Locale.getDefault()).endsWith(".pdf")
+        }
+    }
 }

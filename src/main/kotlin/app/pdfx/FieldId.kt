@@ -1,14 +1,8 @@
-package app.pdfx;
+package app.pdfx
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-@Retention(RetentionPolicy.RUNTIME)
-
-public @interface FieldID {
-    String value();
-
-    enum FieldType {
+@Retention(AnnotationRetention.RUNTIME)
+annotation class FieldID(val value: String, val type: FieldType = FieldType.STRING) {
+    enum class FieldType {
         STRING,
         TEXT,
         LONG,
@@ -16,6 +10,4 @@ public @interface FieldID {
         DATE,
         BOOL
     }
-
-    FieldType type() default FieldType.STRING;
 }

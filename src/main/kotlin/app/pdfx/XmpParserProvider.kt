@@ -1,13 +1,13 @@
-package app.pdfx;
+package app.pdfx
 
-import org.apache.xmpbox.xml.DomXmpParser;
-import org.apache.xmpbox.xml.XmpParsingException;
+import org.apache.xmpbox.xml.DomXmpParser
+import org.apache.xmpbox.xml.XmpParsingException
 
-public class XmpParserProvider {
-
-    public static DomXmpParser get() throws XmpParsingException {
-        DomXmpParser parser = new DomXmpParser();
-        parser.setStrictParsing(false);
-        return parser;
+object XmpParserProvider {
+    @Throws(XmpParsingException::class)
+    fun get(): DomXmpParser {
+        val parser = DomXmpParser()
+        parser.isStrictParsing = false
+        return parser
     }
 }

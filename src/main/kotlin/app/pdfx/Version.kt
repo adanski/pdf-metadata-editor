@@ -1,73 +1,65 @@
-package app.pdfx;
+package app.pdfx
 
-import java.io.IOException;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.IOException
+import java.util.*
+import java.util.regex.Pattern
 
-public class Version {
-    protected static String version;
-
-    public static class VersionTuple {
-        public int major;
-        public int minor;
-        public int patch;
-        public String tag = "";
-        public boolean parseSuccess = false;
-
-
-        public VersionTuple(String version) {
-            this(version, "^(\\d+)\\.(\\d+)\\.(\\d+)-?(\\S*)$");
-        }
-
-        public VersionTuple(String version, String pattern) {
-            Matcher matcher = Pattern.compile(pattern).matcher(version);
-            if (matcher.find()) {
-                major = Integer.parseInt(matcher.group(1));
-                minor = Integer.parseInt(matcher.group(2));
-                patch = Integer.parseInt(matcher.group(3));
-                if (matcher.groupCount() > 3) {
-                    tag = matcher.group(4);
-                    if (tag == null) {
-                        tag = "";
-                    }
-                }
-                parseSuccess = true;
-            } else {
-                tag = "dev";
+object Version {
+    internal var version: String? = null
+    fun get(): VersionTuple {
+        if (version == null) {
+            val prop = Properties()
+            try {
+                prop.load(VersionTuple::class.java.classLoader.getResourceAsStream("app/pdfx/version.properties"))
+                version = prop.getProperty("app.version", "0.0.0-dev")
+            } catch (e: IOException) {
+                e.printStackTrace()
+                version = "0.0.0-dev"
             }
         }
-
-        public int cmp(VersionTuple other) {
-            int diff = major - other.major;
-            if (diff != 0) return diff;
-            diff = minor - other.minor;
-            if (diff != 0) return diff;
-            diff = patch - other.patch;
-            if (diff != 0) return diff;
-            return tag.compareToIgnoreCase(other.tag);
-        }
-
-        public String getAsString() {
-            return Integer.toString(major) + "." +
-                    Integer.toString(minor) + "." +
-                    Integer.toString(patch) + ((tag.length() > 0) ? ("-" + tag) : "");
-        }
+        return VersionTuple(version)
     }
 
-    ;
+    class VersionTuple @JvmOverloads constructor(
+        version: String?,
+        pattern: String? = "^(\\d+)\\.(\\d+)\\.(\\d+)-?(\\S*)$"
+    ) {
+        var major = 0
+        var minor = 0
+        var patch = 0
+        var tag: String? = ""
+        var parseSuccess = false
 
-    public static VersionTuple get() {
-        if (version == null) {
-            Properties prop = new Properties();
-            try {
-                prop.load(VersionTuple.class.getClassLoader().getResourceAsStream("app/pdfx/version.properties"));
-                version = prop.getProperty("app.version", "0.0.0-dev");
-            } catch (IOException e) {
-                e.printStackTrace();
-                version = "0.0.0-dev";
+        init {
+            val matcher = Pattern.compile(pattern).matcher(version)
+            if (matcher.find()) {
+                major = matcher.group(1).toInt()
+                minor = matcher.group(2).toInt()
+                patch = matcher.group(3).toInt()
+                if (matcher.groupCount() > 3) {
+                    tag = matcher.group(4)
+                    if (tag == null) {
+                        tag = ""
+                    }
+                }
+                parseSuccess = true
+            } else {
+                tag = "dev"
             }
         }
-        return new VersionTuple(version);
+
+        fun cmp(other: VersionTuple): Int {
+            var diff = major - other.major
+            if (diff != 0) return diff
+            diff = minor - other.minor
+            if (diff != 0) return diff
+            diff = patch - other.patch
+            return if (diff != 0) diff else tag!!.compareTo(other.tag!!, ignoreCase = true)
+        }
+
+        val asString: String
+            get() = Integer.toString(major) + "." +
+                    Integer.toString(minor) + "." +
+                    Integer.toString(patch) + if (tag!!.length > 0) "-$tag" else ""
     }
 }

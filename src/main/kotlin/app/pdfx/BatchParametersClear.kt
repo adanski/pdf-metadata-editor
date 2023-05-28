@@ -1,20 +1,14 @@
-package app.pdfx;
+package app.pdfx
 
-import java.awt.*;
+import java.awt.Frame
 
-public class BatchParametersClear extends BatchParametersEdit {
-
+class BatchParametersClear @JvmOverloads constructor(params: BatchOperationParameters?, owner: Frame? = null) :
+    BatchParametersEdit(params, owner) {
     /**
      * @wbp.parser.constructor
      */
-    public BatchParametersClear(BatchOperationParameters params) {
-        this(params, null);
+    init {
+        defaultMetadataPane.disableEdit()
+        setMessage("Select fields to be cleared below")
     }
-
-    public BatchParametersClear(BatchOperationParameters params, Frame owner) {
-        super(params, owner);
-        defaultMetadataPane.disableEdit();
-        setMessage("Select fields to be cleared below");
-    }
-
 }

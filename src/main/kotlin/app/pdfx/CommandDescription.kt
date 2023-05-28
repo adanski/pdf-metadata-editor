@@ -1,52 +1,49 @@
-package app.pdfx;
+package app.pdfx
 
-public class CommandDescription {
-    protected static int regKeyCount = 1;
-
-    String name;
-    String description;
-    String regKey;
-
-    protected CommandDescription(String command, String name) {
-        this.name = command;
-        this.regKey = "pme." + (regKeyCount++) + command;
-        this.description = name;
+class CommandDescription protected constructor(@JvmField var name: String, var description: String) {
+    var regKey: String
+    override fun toString(): String {
+        return description
     }
 
-    public String toString() {
-        return description;
+    fun `is`(command: String): Boolean {
+        return description == command
     }
 
-    public boolean is(String command) {
-        return this.name.equals(command);
+    init {
+        regKey = "pme." + regKeyCount++ + description
     }
 
-    public static final CommandDescription[] batchCommands = {
-            new CommandDescription("edit", "Set metadata"),
-            new CommandDescription("clear", "Clear metadata"),
-            new CommandDescription("rename", "Rename files from metadata"),
-            new CommandDescription("tojson", "Extract metadata as JSON"),
-            new CommandDescription("toyaml", "Extract metadata as YAML/Text"),
-            new CommandDescription("fromcsv", "Set metadata from CSV file"),
-    };
+    companion object {
+        protected var regKeyCount = 1
+        val batchCommands = arrayOf(
+            CommandDescription("edit", "Set metadata"),
+            CommandDescription("clear", "Clear metadata"),
+            CommandDescription("rename", "Rename files from metadata"),
+            CommandDescription("tojson", "Extract metadata as JSON"),
+            CommandDescription("toyaml", "Extract metadata as YAML/Text"),
+            CommandDescription("fromcsv", "Set metadata from CSV file")
+        )
 
-    public static String helpMessage(int descriptionOffset) {
-        StringBuilder sb = new StringBuilder();
-        for (CommandDescription cd : batchCommands) {
-            sb.append("  ");
-            sb.append(String.format("%1$-" + descriptionOffset + "s", cd.name));
-            sb.append(cd.description);
-            sb.append('\n');
-        }
-        return sb.toString();
-    }
-
-    public static CommandDescription getBatchCommand(String command) {
-        for (CommandDescription c : batchCommands) {
-            if (c.name.equals(command)) {
-                return c;
+        @JvmStatic
+        fun helpMessage(descriptionOffset: Int): String {
+            val sb = StringBuilder()
+            for (cd in batchCommands) {
+                sb.append("  ")
+                sb.append(String.format("%1$-" + descriptionOffset + "s", cd.description))
+                sb.append(cd.description)
+                sb.append('\n')
             }
+            return sb.toString()
         }
-        return null;
+
+        fun getBatchCommand(command: String): CommandDescription? {
+            for (c in batchCommands) {
+                if (c.description == command) {
+                    return c
+                }
+            }
+            return null
+        }
     }
 }

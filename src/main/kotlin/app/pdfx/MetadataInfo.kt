@@ -1,1675 +1,1618 @@
-package app.pdfx;
+package app.pdfx
 
-import app.pdfx.CommandLine.ParseError;
-import app.pdfx.MdStruct.StructType;
-import com.google.gson.GsonBuilder;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.io.MemoryUsageSetting;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
-import org.apache.pdfbox.pdmodel.PDDocumentInformation;
-import org.apache.pdfbox.pdmodel.common.PDMetadata;
-import org.apache.xmpbox.XMPMetadata;
-import org.apache.xmpbox.schema.AdobePDFSchema;
-import org.apache.xmpbox.schema.DublinCoreSchema;
-import org.apache.xmpbox.schema.XMPBasicSchema;
-import org.apache.xmpbox.schema.XMPRightsManagementSchema;
-import org.apache.xmpbox.type.BadFieldValueException;
-import org.apache.xmpbox.xml.XmpParsingException;
-import org.apache.xmpbox.xml.XmpSerializer;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
+import app.pdfx.CommandLine.ParseError
+import app.pdfx.DateFormat.formatDateTime
+import app.pdfx.DateFormat.formatDateTimeFull
+import app.pdfx.DateFormat.parseDate
+import app.pdfx.DateFormat.parseDateOrNull
+import app.pdfx.FieldID.value
+import app.pdfx.ListFormat.humanReadable
+import app.pdfx.MdStruct.StructType
+import com.google.gson.GsonBuilder
+import org.apache.pdfbox.Loader
+import org.apache.pdfbox.io.MemoryUsageSetting
+import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.pdmodel.common.PDMetadata
+import org.apache.xmpbox.XMPMetadata
+import org.apache.xmpbox.type.BadFieldValueException
+import org.apache.xmpbox.xml.XmpParsingException
+import org.apache.xmpbox.xml.XmpSerializer
+import org.yaml.snakeyaml.DumperOptions
+import org.yaml.snakeyaml.Yaml
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
+import java.lang.reflect.Field
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.*
+import java.util.function.Consumer
+import java.util.function.Function
+import javax.xml.transform.TransformerException
 
-import javax.xml.transform.TransformerException;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-public class MetadataInfo {
-
-    public static class FileInfo {
-        public String name;
-        public String nameWithExt;
-        public Long sizeBytes;
-        public String size;
-        public String createTime;
-        public String modifyTime;
-        public String fullPath;
-
+class MetadataInfo {
+    class FileInfo {
+        var name: String? = null
+        var nameWithExt: String? = null
+        var sizeBytes: Long? = null
+        var size: String? = null
+        var createTime: String? = null
+        var modifyTime: String? = null
+        @JvmField
+        var fullPath: String? = null
     }
 
-    public static class FileInfoEnabled {
-        public boolean name = false;
-        public boolean nameWithExt = false;
-        public boolean sizeBytes = false;
-        public boolean size = false;
-        public boolean createTime = false;
-        public boolean modifyTime = false;
-        public boolean fullPath = false;
-
-        public boolean atLeastOne() {
-            return false;
+    class FileInfoEnabled {
+        var name = false
+        var nameWithExt = false
+        var sizeBytes = false
+        var size = false
+        var createTime = false
+        var modifyTime = false
+        var fullPath = false
+        fun atLeastOne(): Boolean {
+            return false
         }
 
-        public void setAll(boolean value) {
-            name = false;
-            nameWithExt = false;
-            sizeBytes = false;
-            size = false;
-            createTime = false;
-            modifyTime = false;
-            fullPath = false;
+        fun setAll(value: Boolean) {
+            name = false
+            nameWithExt = false
+            sizeBytes = false
+            size = false
+            createTime = false
+            modifyTime = false
+            fullPath = false
         }
     }
 
-    ;
-
-    public static class Basic {
-        public String title;
-        public String author;
-        public String subject;
-        public String keywords;
-        public String creator;
-        public String producer;
-        public Calendar creationDate;
-        public Calendar modificationDate;
-        public String trapped;
+    class Basic {
+        var title: String? = null
+        var author: String? = null
+        var subject: String? = null
+        var keywords: String? = null
+        var creator: String? = null
+        var producer: String? = null
+        var creationDate: Calendar? = null
+        var modificationDate: Calendar? = null
+        var trapped: String? = null
     }
 
-    ;
-
-    public static class BasicEnabled {
-        public boolean title = true;
-        public boolean author = true;
-        public boolean subject = true;
-        public boolean keywords = true;
-        public boolean creator = true;
-        public boolean producer = true;
-        public boolean creationDate = true;
-        public boolean modificationDate = true;
-        public boolean trapped = true;
-
-        public boolean atLeastOne() {
-            return title || author || subject || keywords || creator || producer || creationDate || modificationDate
-                    || trapped;
+    class BasicEnabled {
+        var title = true
+        var author = true
+        var subject = true
+        var keywords = true
+        var creator = true
+        var producer = true
+        var creationDate = true
+        var modificationDate = true
+        var trapped = true
+        fun atLeastOne(): Boolean {
+            return (title || author || subject || keywords || creator || producer || creationDate || modificationDate
+                    || trapped)
         }
 
-        public void setAll(boolean value) {
-            title = value;
-            author = value;
-            subject = value;
-            keywords = value;
-            creator = value;
-            producer = value;
-            creationDate = value;
-            modificationDate = value;
-            trapped = value;
+        fun setAll(value: Boolean) {
+            title = value
+            author = value
+            subject = value
+            keywords = value
+            creator = value
+            producer = value
+            creationDate = value
+            modificationDate = value
+            trapped = value
         }
     }
 
-    ;
-
-    public static class XmpBasic {
-        public String creatorTool;
-        public Calendar createDate;
-        public Calendar modifyDate;
-        public String baseURL;
-        public Integer rating;
-        public String label;
-        public String nickname;
-        public List<String> identifiers;
-        public List<String> advisories;
-        public Calendar metadataDate;
+    class XmpBasic {
+        var creatorTool: String? = null
+        var createDate: Calendar? = null
+        var modifyDate: Calendar? = null
+        var baseURL: String? = null
+        var rating: Int? = null
+        var label: String? = null
+        var nickname: String? = null
+        var identifiers: List<String>? = null
+        var advisories: List<String>? = null
+        var metadataDate: Calendar? = null
     }
 
-    ;
-
-    public static class XmpBasicEnabled {
-        public boolean creatorTool = true;
-        public boolean createDate = true;
-        public boolean modifyDate = true;
-        public boolean baseURL = true;
-        public boolean rating = true;
-        public boolean label = true;
-        public boolean nickname = true;
-        public boolean identifiers = true;
-        public boolean advisories = true;
-        public boolean metadataDate = true;
-
-        public boolean atLeastOne() {
-            return creatorTool || createDate || modifyDate || baseURL || rating || label || nickname
-                    || identifiers || advisories || metadataDate;
+    class XmpBasicEnabled {
+        var creatorTool = true
+        var createDate = true
+        var modifyDate = true
+        var baseURL = true
+        var rating = true
+        var label = true
+        var nickname = true
+        var identifiers = true
+        var advisories = true
+        var metadataDate = true
+        fun atLeastOne(): Boolean {
+            return (creatorTool || createDate || modifyDate || baseURL || rating || label || nickname
+                    || identifiers || advisories || metadataDate)
         }
 
-        public void setAll(boolean value) {
-            creatorTool = value;
-            createDate = value;
-            modifyDate = value;
-            baseURL = value;
-            rating = value;
-            label = value;
-            nickname = value;
-            identifiers = value;
-            advisories = value;
-            metadataDate = value;
+        fun setAll(value: Boolean) {
+            creatorTool = value
+            createDate = value
+            modifyDate = value
+            baseURL = value
+            rating = value
+            label = value
+            nickname = value
+            identifiers = value
+            advisories = value
+            metadataDate = value
         }
     }
 
-    ;
-
-    public static class XmpPdf {
-        public String pdfVersion;
-        public String keywords;
-        public String producer;
+    class XmpPdf {
+        var pdfVersion: String? = null
+        var keywords: String? = null
+        var producer: String? = null
     }
 
-    ;
-
-    public static class XmpPdfEnabled {
-        public boolean pdfVersion = true;
-        public boolean keywords = true;
-        public boolean producer = true;
-
-        public boolean atLeastOne() {
-            return pdfVersion || keywords || producer;
+    class XmpPdfEnabled {
+        var pdfVersion = true
+        var keywords = true
+        var producer = true
+        fun atLeastOne(): Boolean {
+            return pdfVersion || keywords || producer
         }
 
-        public void setAll(boolean value) {
-            pdfVersion = value;
-            keywords = value;
-            producer = value;
+        fun setAll(value: Boolean) {
+            pdfVersion = value
+            keywords = value
+            producer = value
         }
     }
 
-    ;
+    class XmpDublinCore {
+        var title: String? = null
+        var description: String? = null
+        var creators: MutableList<String>? = null
+        var contributors: List<String>? = null
+        var coverage: String? = null
 
-    public static class XmpDublinCore {
-        public String title;
-        public String description;
-        public List<String> creators;
-        public List<String> contributors;
-        public String coverage;
         @FieldID(value = "dates", type = FieldID.FieldType.DATE)
-        public List<Calendar> dates;
-        public String format;
-        public String identifier;
-        public List<String> languages;
-        public List<String> publishers;
-        public List<String> relationships;
-        public String rights;
-        public String source;
-        public List<String> subjects;
-        public List<String> types;
+        var dates: List<Calendar>? = null
+        var format: String? = null
+        var identifier: String? = null
+        var languages: List<String>? = null
+        var publishers: List<String>? = null
+        var relationships: List<String>? = null
+        var rights: String? = null
+        var source: String? = null
+        var subjects: List<String>? = null
+        var types: List<String>? = null
     }
 
-    ;
-
-    public static class XmpDublinCoreEnabled {
-        public boolean title = true;
-        public boolean description = true;
-        public boolean creators = true;
-        public boolean contributors = true;
-        public boolean coverage = true;
-        public boolean dates = true;
-        public boolean format = true;
-        public boolean identifier = true;
-        public boolean languages = true;
-        public boolean publishers = true;
-        public boolean relationships = true;
-        public boolean rights = true;
-        public boolean source = true;
-        public boolean subjects = true;
-        public boolean types = true;
-
-        public boolean atLeastOne() {
-            return title || description || creators || contributors || coverage || dates || format || identifier
-                    || languages || publishers || relationships || rights || source || subjects || types;
+    class XmpDublinCoreEnabled {
+        var title = true
+        var description = true
+        var creators = true
+        var contributors = true
+        var coverage = true
+        var dates = true
+        var format = true
+        var identifier = true
+        var languages = true
+        var publishers = true
+        var relationships = true
+        var rights = true
+        var source = true
+        var subjects = true
+        var types = true
+        fun atLeastOne(): Boolean {
+            return (title || description || creators || contributors || coverage || dates || format || identifier
+                    || languages || publishers || relationships || rights || source || subjects || types)
         }
 
-        public void setAll(boolean value) {
-            title = value;
-            description = value;
-            creators = value;
-            contributors = value;
-            coverage = value;
-            dates = value;
-            format = value;
-            identifier = value;
-            languages = value;
-            publishers = value;
-            relationships = value;
-            rights = value;
-            source = value;
-            subjects = value;
-            types = value;
+        fun setAll(value: Boolean) {
+            title = value
+            description = value
+            creators = value
+            contributors = value
+            coverage = value
+            dates = value
+            format = value
+            identifier = value
+            languages = value
+            publishers = value
+            relationships = value
+            rights = value
+            source = value
+            subjects = value
+            types = value
         }
     }
 
-    ;
-
-    public static class XmpRights {
-        public String certificate;
-        public Boolean marked;
-        public List<String> owner;
-        public String usageTerms;
-        public String webStatement;
+    class XmpRights {
+        var certificate: String? = null
+        var marked: Boolean? = null
+        var owner: List<String>? = null
+        var usageTerms: String? = null
+        var webStatement: String? = null
     }
 
-    public static class XmpRightsEnabled {
-        public boolean certificate = true;
-        public boolean marked = true;
-        public boolean owner = true;
-        public boolean usageTerms = true;
-        public boolean webStatement = true;
-
-        public boolean atLeastOne() {
-            return certificate || marked || owner || usageTerms || webStatement;
+    class XmpRightsEnabled {
+        var certificate = true
+        var marked = true
+        var owner = true
+        var usageTerms = true
+        var webStatement = true
+        fun atLeastOne(): Boolean {
+            return certificate || marked || owner || usageTerms || webStatement
         }
 
-        public void setAll(boolean value) {
-            certificate = value;
-            marked = value;
-            owner = value;
-            usageTerms = value;
-            webStatement = value;
+        fun setAll(value: Boolean) {
+            certificate = value
+            marked = value
+            owner = value
+            usageTerms = value
+            webStatement = value
         }
     }
 
+    @MdStruct
+    var doc: Basic? = null
 
     @MdStruct
-    public Basic doc;
-    @MdStruct
-    public XmpBasic basic;
-    @MdStruct
-    public XmpPdf pdf;
-    @MdStruct
-    public XmpDublinCore dc;
-    @MdStruct
-    public XmpRights rights;
-    @MdStruct(name = "file", type = MdStruct.StructType.MD_STRUCT, access = MdStruct.Access.READ_ONLY)
-    public FileInfo file;
+    var basic: XmpBasic? = null
 
-    @MdStruct(name = "doc", type = MdStruct.StructType.MD_ENABLE_STRUCT)
-    public BasicEnabled docEnabled;
-    @MdStruct(name = "basic", type = MdStruct.StructType.MD_ENABLE_STRUCT)
-    public XmpBasicEnabled basicEnabled;
-    @MdStruct(name = "pdf", type = MdStruct.StructType.MD_ENABLE_STRUCT)
-    public XmpPdfEnabled pdfEnabled;
-    @MdStruct(name = "dc", type = MdStruct.StructType.MD_ENABLE_STRUCT)
-    public XmpDublinCoreEnabled dcEnabled;
-    @MdStruct(name = "rights", type = MdStruct.StructType.MD_ENABLE_STRUCT)
-    public XmpRightsEnabled rightsEnabled;
-    @MdStruct(name = "file", type = MdStruct.StructType.MD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
-    public FileInfoEnabled fileEnabled;
+    @MdStruct
+    var pdf: XmpPdf? = null
 
-    public MetadataInfo() {
-        super();
-        clear();
+    @MdStruct
+    var dc: XmpDublinCore? = null
+
+    @MdStruct
+    var rights: XmpRights? = null
+
+    @JvmField
+    @MdStruct(name = "file", type = StructType.MD_STRUCT, access = MdStruct.Access.READ_ONLY)
+    var file: FileInfo? = null
+
+    @MdStruct(name = "doc", type = StructType.MD_ENABLE_STRUCT)
+    var docEnabled: BasicEnabled? = null
+
+    @MdStruct(name = "basic", type = StructType.MD_ENABLE_STRUCT)
+    var basicEnabled: XmpBasicEnabled? = null
+
+    @MdStruct(name = "pdf", type = StructType.MD_ENABLE_STRUCT)
+    var pdfEnabled: XmpPdfEnabled? = null
+
+    @MdStruct(name = "dc", type = StructType.MD_ENABLE_STRUCT)
+    var dcEnabled: XmpDublinCoreEnabled? = null
+
+    @MdStruct(name = "rights", type = StructType.MD_ENABLE_STRUCT)
+    var rightsEnabled: XmpRightsEnabled? = null
+
+    @MdStruct(name = "file", type = StructType.MD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
+    var fileEnabled: FileInfoEnabled? = null
+    fun clear() {
+        doc = Basic()
+        basic = XmpBasic()
+        pdf = XmpPdf()
+        dc = XmpDublinCore()
+        rights = XmpRights()
+        file = FileInfo()
+        docEnabled = BasicEnabled()
+        basicEnabled = XmpBasicEnabled()
+        pdfEnabled = XmpPdfEnabled()
+        dcEnabled = XmpDublinCoreEnabled()
+        rightsEnabled = XmpRightsEnabled()
+        fileEnabled = FileInfoEnabled()
     }
 
-    public void clear() {
-        this.doc = new Basic();
-        this.basic = new XmpBasic();
-        this.pdf = new XmpPdf();
-        this.dc = new XmpDublinCore();
-        this.rights = new XmpRights();
-        this.file = new FileInfo();
-
-        this.docEnabled = new BasicEnabled();
-        this.basicEnabled = new XmpBasicEnabled();
-        this.pdfEnabled = new XmpPdfEnabled();
-        this.dcEnabled = new XmpDublinCoreEnabled();
-        this.rightsEnabled = new XmpRightsEnabled();
-        this.fileEnabled = new FileInfoEnabled();
-    }
-
-    protected void loadFromPDF(PDDocument document) throws IOException, XmpParsingException, BadFieldValueException {
-        PDDocumentInformation info = document.getDocumentInformation();
+    @Throws(IOException::class, XmpParsingException::class, BadFieldValueException::class)
+    protected fun loadFromPDF(document: PDDocument) {
+        val info = document.documentInformation
 
         // Basic info
-        doc.title = info.getTitle();
-        doc.author = info.getAuthor();
-        doc.subject = info.getSubject();
-        doc.keywords = info.getKeywords();
-        doc.creator = info.getCreator();
-        doc.producer = info.getProducer();
-        doc.creationDate = info.getCreationDate();
-        doc.modificationDate = info.getModificationDate();
-        doc.trapped = info.getTrapped();
+        doc!!.title = info.title
+        doc!!.author = info.author
+        doc!!.subject = info.subject
+        doc!!.keywords = info.keywords
+        doc!!.creator = info.creator
+        doc!!.producer = info.producer
+        doc!!.creationDate = info.creationDate
+        doc!!.modificationDate = info.modificationDate
+        doc!!.trapped = info.trapped
 
         // Load XMP catalog
-        PDDocumentCatalog catalog = document.getDocumentCatalog();
-        PDMetadata meta = catalog.getMetadata();
-
+        val catalog = document.documentCatalog
+        val meta = catalog.metadata
         if (meta != null) {
             // Load the metadata
-            XMPMetadata metadata = XmpParserProvider.get().parse(meta.createInputStream());
+            val metadata = XmpParserProvider.get().parse(meta.createInputStream())
 
             // XMP Basic
-            XMPBasicSchema bi = metadata.getXMPBasicSchema();
+            val bi = metadata.xmpBasicSchema
             if (bi != null) {
-
-                basic.creatorTool = bi.getCreatorTool();
-                basic.createDate = bi.getCreateDate();
-                basic.modifyDate = bi.getModifyDate();
-                basic.baseURL = bi.getBaseURL();
-                basic.rating = bi.getRating();
-                basic.label = bi.getLabel();
-                basic.nickname = bi.getNickname();
-                basic.identifiers = bi.getIdentifiers();
-                basic.advisories = bi.getAdvisory();
-                basic.metadataDate = bi.getMetadataDate();
+                basic!!.creatorTool = bi.creatorTool
+                basic!!.createDate = bi.createDate
+                basic!!.modifyDate = bi.modifyDate
+                basic!!.baseURL = bi.baseURL
+                basic!!.rating = bi.rating
+                basic!!.label = bi.label
+                basic!!.nickname = bi.nickname
+                basic!!.identifiers = bi.identifiers
+                basic!!.advisories = bi.advisory
+                basic!!.metadataDate = bi.metadataDate
             }
 
             // XMP PDF
-            AdobePDFSchema pi = metadata.getAdobePDFSchema();
+            val pi = metadata.adobePDFSchema
             if (pi != null) {
-                pdf.pdfVersion = pi.getPDFVersion();
-                pdf.keywords = pi.getKeywords();
-                pdf.producer = pi.getProducer();
+                pdf!!.pdfVersion = pi.pdfVersion
+                pdf!!.keywords = pi.keywords
+                pdf!!.producer = pi.producer
             }
 
             // XMP Dublin Core
-            DublinCoreSchema dcS = metadata.getDublinCoreSchema();
+            val dcS = metadata.dublinCoreSchema
             if (dcS != null) {
-                dc.title = dcS.getTitle();
-                dc.description = dcS.getDescription();
-                dc.creators = dcS.getCreators();
-                dc.contributors = dcS.getContributors();
-                dc.coverage = dcS.getCoverage();
-                dc.dates = dcS.getDates();
-                dc.format = dcS.getFormat();
-                dc.identifier = dcS.getIdentifier();
-                dc.languages = dcS.getLanguages();
-                dc.publishers = dcS.getPublishers();
-                dc.relationships = dcS.getRelations();
-                dc.rights = dcS.getRights();
-                dc.source = dcS.getSource();
-                dc.subjects = dcS.getSubjects();
-                dc.types = dcS.getTypes();
+                dc!!.title = dcS.title
+                dc!!.description = dcS.description
+                dc!!.creators = dcS.creators
+                dc!!.contributors = dcS.contributors
+                dc!!.coverage = dcS.coverage
+                dc!!.dates = dcS.dates
+                dc!!.format = dcS.format
+                dc!!.identifier = dcS.identifier
+                dc!!.languages = dcS.languages
+                dc!!.publishers = dcS.publishers
+                dc!!.relationships = dcS.relations
+                dc!!.rights = dcS.rights
+                dc!!.source = dcS.source
+                dc!!.subjects = dcS.subjects
+                dc!!.types = dcS.types
             }
 
             // XMP Rights
-            XMPRightsManagementSchema ri = metadata.getXMPRightsManagementSchema();
+            val ri = metadata.xmpRightsManagementSchema
             if (ri != null) {
-                rights.certificate = ri.getCertificate();
-                rights.marked = ri.getMarked();
-                rights.owner = ri.getOwners();
-                rights.usageTerms = ri.getUsageTerms();
-                rights.webStatement = ri.getWebStatement();
+                rights!!.certificate = ri.certificate
+                rights!!.marked = ri.marked
+                rights!!.owner = ri.owners
+                rights!!.usageTerms = ri.usageTerms
+                rights!!.webStatement = ri.webStatement
             }
         }
 
         //System.err.println("Loaded:");
         //System.err.println(toYAML());
-
     }
 
-    protected static String hrSizes[] = new String[]{"B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
-
-    public void loadFromPDF(File pdfFile) throws IOException, XmpParsingException, BadFieldValueException {
-        loadPDFFileInfo(pdfFile);
-
-        try (PDDocument document = Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720))) {
-            loadFromPDF(document);
-        }
+    @Throws(IOException::class, XmpParsingException::class, BadFieldValueException::class)
+    fun loadFromPDF(pdfFile: File) {
+        loadPDFFileInfo(pdfFile)
+        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30720)).use { document -> loadFromPDF(document) }
     }
 
-    public void loadPDFFileInfo(File pdfFile) throws IOException {
-        file.fullPath = pdfFile.getAbsolutePath();
-        file.nameWithExt = pdfFile.getName();
-        BasicFileAttributes attrs = Files.readAttributes(pdfFile.toPath(), BasicFileAttributes.class);
-        file.sizeBytes = attrs.size();
-        file.createTime = attrs.creationTime().toString();
-        file.modifyTime = attrs.lastModifiedTime().toString();
+    @Throws(IOException::class)
+    fun loadPDFFileInfo(pdfFile: File) {
+        file!!.fullPath = pdfFile.absolutePath
+        file!!.nameWithExt = pdfFile.name
+        val attrs = Files.readAttributes(pdfFile.toPath(), BasicFileAttributes::class.java)
+        file!!.sizeBytes = attrs.size()
+        file!!.createTime = attrs.creationTime().toString()
+        file!!.modifyTime = attrs.lastModifiedTime().toString()
 
         // filename w/o extension
-        if (file.nameWithExt != null) {
-            int dotPos = file.nameWithExt.lastIndexOf('.');
+        if (file!!.nameWithExt != null) {
+            val dotPos = file!!.nameWithExt!!.lastIndexOf('.')
             if (dotPos >= 0) {
-                file.name = file.nameWithExt.substring(0, dotPos);
+                file!!.name = file!!.nameWithExt!!.substring(0, dotPos)
             } else {
-                file.name = file.nameWithExt;
+                file!!.name = file!!.nameWithExt
             }
         }
         // human readable file size
-        double size = file.sizeBytes;
-        int idx;
-        for (idx = 0; idx < hrSizes.length; ++idx) {
+        var size = file!!.sizeBytes!!.toDouble()
+        var idx: Int
+        idx = 0
+        while (idx < hrSizes.size) {
             if (size < 1000) {
-                break;
+                break
             }
-            size /= 1000;
+            size /= 1000.0
+            ++idx
         }
-        file.size = String.format("%.2f%s", size, hrSizes[idx]);
+        file!!.size = String.format("%.2f%s", size, hrSizes[idx])
     }
 
-    protected void saveToPDF(PDDocument document, File pdfFile) throws Exception {
-        if (!(docEnabled.atLeastOne() || basicEnabled.atLeastOne() || pdfEnabled.atLeastOne() || dcEnabled.atLeastOne() || rightsEnabled.atLeastOne())) {
-            return;
+    @Throws(Exception::class)
+    protected fun saveToPDF(document: PDDocument, pdfFile: File) {
+        if (!(docEnabled!!.atLeastOne() || basicEnabled!!.atLeastOne() || pdfEnabled!!.atLeastOne() || dcEnabled!!.atLeastOne() || rightsEnabled!!.atLeastOne())) {
+            return
         }
         //System.err.println("Saving:");
         //System.err.println(toYAML());
         // Basic info
-        if (docEnabled.atLeastOne()) {
-            PDDocumentInformation info = document.getDocumentInformation();
-            if (docEnabled.title) {
-                info.setTitle(doc.title);
+        if (docEnabled!!.atLeastOne()) {
+            val info = document.documentInformation
+            if (docEnabled!!.title) {
+                info.title = doc!!.title
             }
-            if (docEnabled.author) {
-                info.setAuthor(doc.author);
+            if (docEnabled!!.author) {
+                info.author = doc!!.author
             }
-            if (docEnabled.subject) {
-                info.setSubject(doc.subject);
+            if (docEnabled!!.subject) {
+                info.subject = doc!!.subject
             }
-            if (docEnabled.keywords) {
-                info.setKeywords(doc.keywords);
+            if (docEnabled!!.keywords) {
+                info.keywords = doc!!.keywords
             }
-            if (docEnabled.creator) {
-                info.setCreator(doc.creator);
+            if (docEnabled!!.creator) {
+                info.creator = doc!!.creator
             }
-            if (docEnabled.producer) {
-                info.setProducer(doc.producer);
+            if (docEnabled!!.producer) {
+                info.producer = doc!!.producer
             }
-            if (docEnabled.creationDate) {
-                info.setCreationDate(doc.creationDate);
+            if (docEnabled!!.creationDate) {
+                info.creationDate = doc!!.creationDate
             }
-            if (docEnabled.modificationDate) {
-                info.setModificationDate(doc.modificationDate);
+            if (docEnabled!!.modificationDate) {
+                info.modificationDate = doc!!.modificationDate
             }
-            if (docEnabled.trapped) {
-                info.setTrapped(doc.trapped);
+            if (docEnabled!!.trapped) {
+                info.trapped = doc!!.trapped
             }
-            document.setDocumentInformation(info);
+            document.documentInformation = info
         }
 
         // XMP
-        PDDocumentCatalog catalog = document.getDocumentCatalog();
-        PDMetadata meta = catalog.getMetadata();
-
-        XMPMetadata xmpOld = null;
+        val catalog = document.documentCatalog
+        val meta = catalog.metadata
+        var xmpOld: XMPMetadata? = null
         if (meta != null) {
-            xmpOld = XmpParserProvider.get().parse(meta.createInputStream());
+            xmpOld = XmpParserProvider.get().parse(meta.createInputStream())
         }
-        XMPMetadata xmpNew = XMPMetadata.createXMPMetadata();
+        val xmpNew = XMPMetadata.createXMPMetadata()
         // XMP Basic
-        XMPBasicSchema biOld = xmpOld != null ? xmpOld.getXMPBasicSchema() : null;
-        boolean atLeastOneXmpBasicSet = false;
-        if (basicEnabled.atLeastOne() || (biOld != null)) {
-            XMPBasicSchema bi = xmpNew.createAndAddXMPBasicSchema();
-
-            if (basicEnabled.advisories) {
-                if (basic.advisories != null) {
-                    for (String a : basic.advisories) {
-                        bi.addAdvisory(a);
-                        atLeastOneXmpBasicSet = true;
+        val biOld = xmpOld?.xmpBasicSchema
+        var atLeastOneXmpBasicSet = false
+        if (basicEnabled!!.atLeastOne() || biOld != null) {
+            val bi = xmpNew.createAndAddXMPBasicSchema()
+            if (basicEnabled!!.advisories) {
+                if (basic!!.advisories != null) {
+                    for (a in basic!!.advisories!!) {
+                        bi.addAdvisory(a)
+                        atLeastOneXmpBasicSet = true
                     }
                 }
             } else if (biOld != null) {
-                List<String> old = biOld.getAdvisory();
+                val old = biOld.advisory
                 if (old != null) {
-                    for (String a : old) {
-                        bi.addAdvisory(a);
-                        atLeastOneXmpBasicSet = true;
+                    for (a in old) {
+                        bi.addAdvisory(a)
+                        atLeastOneXmpBasicSet = true
                     }
                 }
             }
-
-            if (basicEnabled.baseURL) {
-                if (basic.baseURL != null) {
-                    bi.setBaseURL(basic.baseURL);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.baseURL) {
+                if (basic!!.baseURL != null) {
+                    bi.baseURL = basic!!.baseURL
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                String baseUrl = biOld.getBaseURL();
+                val baseUrl = biOld.baseURL
                 if (baseUrl != null) {
-                    bi.setBaseURL(baseUrl);
-                    atLeastOneXmpBasicSet = true;
+                    bi.baseURL = baseUrl
+                    atLeastOneXmpBasicSet = true
                 }
             }
-
-            if (basicEnabled.createDate) {
-                if (basic.createDate != null) {
-                    bi.setCreateDate(basic.createDate);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.createDate) {
+                if (basic!!.createDate != null) {
+                    bi.createDate = basic!!.createDate
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                Calendar old = biOld.getCreateDate();
+                val old = biOld.createDate
                 if (old != null) {
-                    bi.setCreateDate(old);
-                    atLeastOneXmpBasicSet = true;
+                    bi.createDate = old
+                    atLeastOneXmpBasicSet = true
                 }
             }
-
-            if (basicEnabled.modifyDate) {
-                if (basic.modifyDate != null) {
-                    bi.setModifyDate(basic.modifyDate);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.modifyDate) {
+                if (basic!!.modifyDate != null) {
+                    bi.modifyDate = basic!!.modifyDate
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                Calendar old = biOld.getModifyDate();
+                val old = biOld.modifyDate
                 if (old != null) {
-                    bi.setModifyDate(old);
-                    atLeastOneXmpBasicSet = true;
+                    bi.modifyDate = old
+                    atLeastOneXmpBasicSet = true
                 }
             }
-
-            if (basicEnabled.creatorTool) {
-                if (basic.creatorTool != null) {
-                    bi.setCreatorTool(basic.creatorTool);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.creatorTool) {
+                if (basic!!.creatorTool != null) {
+                    bi.creatorTool = basic!!.creatorTool
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                String old = biOld.getCreatorTool();
+                val old = biOld.creatorTool
                 if (old != null) {
-                    bi.setCreatorTool(old);
-                    atLeastOneXmpBasicSet = true;
+                    bi.creatorTool = old
+                    atLeastOneXmpBasicSet = true
                 }
             }
-
-            if (basicEnabled.identifiers) {
-                if (basic.identifiers != null) {
-                    for (String i : basic.identifiers) {
-                        bi.addIdentifier(i);
-                        atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.identifiers) {
+                if (basic!!.identifiers != null) {
+                    for (i in basic!!.identifiers!!) {
+                        bi.addIdentifier(i)
+                        atLeastOneXmpBasicSet = true
                     }
                 }
             } else if (biOld != null) {
-                List<String> old = biOld.getIdentifiers();
+                val old = biOld.identifiers
                 if (old != null) {
-                    for (String a : old) {
-                        bi.addIdentifier(a);
-                        atLeastOneXmpBasicSet = true;
+                    for (a in old) {
+                        bi.addIdentifier(a)
+                        atLeastOneXmpBasicSet = true
                     }
                 }
             }
-
-            if (basicEnabled.label) {
-                if (basic.label != null) {
-                    bi.setLabel(basic.label);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.label) {
+                if (basic!!.label != null) {
+                    bi.label = basic!!.label
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                String old = biOld.getLabel();
+                val old = biOld.label
                 if (old != null) {
-                    bi.setLabel(old);
-                    atLeastOneXmpBasicSet = true;
+                    bi.label = old
+                    atLeastOneXmpBasicSet = true
                 }
             }
-
-            if (basicEnabled.metadataDate) {
-                if (basic.metadataDate != null) {
-                    bi.setMetadataDate(basic.metadataDate);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.metadataDate) {
+                if (basic!!.metadataDate != null) {
+                    bi.metadataDate = basic!!.metadataDate
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                Calendar old = biOld.getMetadataDate();
+                val old = biOld.metadataDate
                 if (old != null) {
-                    bi.setMetadataDate(old);
-                    atLeastOneXmpBasicSet = true;
+                    bi.metadataDate = old
+                    atLeastOneXmpBasicSet = true
                 }
             }
-
-            if (basicEnabled.nickname) {
-                if (basic.nickname != null) {
-                    bi.setNickname(basic.nickname);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.nickname) {
+                if (basic!!.nickname != null) {
+                    bi.nickname = basic!!.nickname
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                String old = biOld.getNickname();
+                val old = biOld.nickname
                 if (old != null) {
-                    bi.setNickname(old);
-                    atLeastOneXmpBasicSet = true;
+                    bi.nickname = old
+                    atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled.rating) {
-                if (basic.rating != null) {
-                    bi.setRating(basic.rating);
-                    atLeastOneXmpBasicSet = true;
+            if (basicEnabled!!.rating) {
+                if (basic!!.rating != null) {
+                    bi.rating = basic!!.rating
+                    atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
-                Integer old = biOld.getRating();
+                val old = biOld.rating
                 if (old != null) {
-                    bi.setRating(old);
-                    atLeastOneXmpBasicSet = true;
+                    bi.rating = old
+                    atLeastOneXmpBasicSet = true
                 }
             }
         }
         // XMP PDF
-        AdobePDFSchema piOld = xmpOld != null ? xmpOld.getAdobePDFSchema() : null;
-        boolean atLeastOneXmpPdfSet = false;
-        if (pdfEnabled.atLeastOne() || (piOld != null)) {
-            AdobePDFSchema pi = xmpNew.createAndAddAdobePDFSchema();
-
-            if (pdfEnabled.keywords) {
-                if (pdf.keywords != null) {
-                    pi.setKeywords(pdf.keywords);
-                    atLeastOneXmpPdfSet = true;
+        val piOld = xmpOld?.adobePDFSchema
+        var atLeastOneXmpPdfSet = false
+        if (pdfEnabled!!.atLeastOne() || piOld != null) {
+            val pi = xmpNew.createAndAddAdobePDFSchema()
+            if (pdfEnabled!!.keywords) {
+                if (pdf!!.keywords != null) {
+                    pi.keywords = pdf!!.keywords
+                    atLeastOneXmpPdfSet = true
                 }
             } else if (piOld != null) {
-                String old = piOld.getKeywords();
+                val old = piOld.keywords
                 if (old != null) {
-                    pi.setKeywords(old);
-                    atLeastOneXmpPdfSet = true;
+                    pi.keywords = old
+                    atLeastOneXmpPdfSet = true
                 }
             }
-
-            if (pdfEnabled.producer) {
-                if (pdf.producer != null) {
-                    pi.setProducer(pdf.producer);
-                    atLeastOneXmpPdfSet = true;
+            if (pdfEnabled!!.producer) {
+                if (pdf!!.producer != null) {
+                    pi.producer = pdf!!.producer
+                    atLeastOneXmpPdfSet = true
                 }
             } else if (piOld != null) {
-                String old = piOld.getProducer();
+                val old = piOld.producer
                 if (old != null) {
-                    pi.setProducer(old);
-                    atLeastOneXmpPdfSet = true;
+                    pi.producer = old
+                    atLeastOneXmpPdfSet = true
                 }
             }
-
-            if (pdfEnabled.pdfVersion) {
-                if (pdf.pdfVersion != null) {
-                    pi.setPDFVersion(pdf.pdfVersion);
-                    atLeastOneXmpPdfSet = true;
+            if (pdfEnabled!!.pdfVersion) {
+                if (pdf!!.pdfVersion != null) {
+                    pi.pdfVersion = pdf!!.pdfVersion
+                    atLeastOneXmpPdfSet = true
                 }
             } else if (piOld != null) {
-                String old = piOld.getPDFVersion();
+                val old = piOld.pdfVersion
                 if (old != null) {
-                    pi.setPDFVersion(old);
-                    atLeastOneXmpPdfSet = true;
+                    pi.pdfVersion = old
+                    atLeastOneXmpPdfSet = true
                 }
             }
         }
 
         // XMP Dublin Core
-        DublinCoreSchema dcOld = xmpOld != null ? xmpOld.getDublinCoreSchema() : null;
-        boolean atLeastOneXmpDcSet = false;
-        if (dcEnabled.atLeastOne() || (dcOld != null)) {
-            DublinCoreSchema dcS = xmpNew.createAndAddDublinCoreSchema();
-
-            if (dcEnabled.title) {
-                if (dc.title != null) {
-                    dcS.setTitle(dc.title);
-                    atLeastOneXmpDcSet = true;
+        val dcOld = xmpOld?.dublinCoreSchema
+        var atLeastOneXmpDcSet = false
+        if (dcEnabled!!.atLeastOne() || dcOld != null) {
+            val dcS = xmpNew.createAndAddDublinCoreSchema()
+            if (dcEnabled!!.title) {
+                if (dc!!.title != null) {
+                    dcS.title = dc!!.title
+                    atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
-                String old = dcOld.getTitle();
+                val old = dcOld.title
                 if (old != null) {
-                    dcS.setTitle(old);
-                    atLeastOneXmpDcSet = true;
+                    dcS.title = old
+                    atLeastOneXmpDcSet = true
                 }
             }
             //
-            if (dcEnabled.contributors) {
-                if (dc.contributors != null) {
-                    for (String i : dc.contributors) {
-                        dcS.addContributor(i);
-                        atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.contributors) {
+                if (dc!!.contributors != null) {
+                    for (i in dc!!.contributors!!) {
+                        dcS.addContributor(i)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             } else if (dcOld != null) {
-                List<String> old = dcOld.getContributors();
+                val old = dcOld.contributors
                 if (old != null) {
-                    for (String a : old) {
-                        dcS.addContributor(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addContributor(a)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             }
             //
-            if (dcEnabled.publishers) {
-                if (dc.publishers != null) {
-                    for (String i : dc.publishers) {
-                        dcS.addPublisher(i);
-                        atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.publishers) {
+                if (dc!!.publishers != null) {
+                    for (i in dc!!.publishers!!) {
+                        dcS.addPublisher(i)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             } else if (dcOld != null) {
-                List<String> old = dcOld.getPublishers();
+                val old = dcOld.publishers
                 if (old != null) {
-                    for (String a : old) {
-                        dcS.addPublisher(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addPublisher(a)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             }
             //
-            if (dcEnabled.relationships) {
-                if (dc.relationships != null) {
-                    for (String i : dc.relationships) {
-                        dcS.addRelation(i);
-                        atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.relationships) {
+                if (dc!!.relationships != null) {
+                    for (i in dc!!.relationships!!) {
+                        dcS.addRelation(i)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             } else if (dcOld != null) {
-                List<String> old = dcOld.getRelations();
+                val old = dcOld.relations
                 if (old != null) {
-                    for (String a : old) {
-                        dcS.addRelation(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addRelation(a)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             }
             //
-            if (dcEnabled.subjects) {
-                if (dc.subjects != null) {
-                    for (String i : dc.subjects) {
-                        dcS.addSubject(i);
-                        atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.subjects) {
+                if (dc!!.subjects != null) {
+                    for (i in dc!!.subjects!!) {
+                        dcS.addSubject(i)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             } else if (dcOld != null) {
-                List<String> old = dcOld.getSubjects();
+                val old = dcOld.subjects
                 if (old != null) {
-                    for (String a : old) {
-                        dcS.addSubject(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addSubject(a)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             }
             //
-            if (dcEnabled.types) {
-                if (dc.types != null) {
-                    for (String i : dc.types) {
-                        dcS.addType(i);
-                        atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.types) {
+                if (dc!!.types != null) {
+                    for (i in dc!!.types!!) {
+                        dcS.addType(i)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             } else if (dcOld != null) {
-                List<String> old = dcOld.getTypes();
+                val old = dcOld.types
                 if (old != null) {
-                    for (String a : old) {
-                        dcS.addType(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
-                    }
-                }
-            }
-            //
-            if (dcEnabled.languages) {
-                if (dc.languages != null) {
-                    for (String i : dc.languages) {
-                        dcS.addLanguage(i);
-                        atLeastOneXmpDcSet = true;
-                    }
-                }
-            } else if (dcOld != null) {
-                List<String> old = dcOld.getLanguages();
-                if (old != null) {
-                    for (String a : old) {
-                        dcS.addLanguage(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addType(a)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             }
             //
-            if (dcEnabled.creators) {
-                if (dc.creators != null) {
-                    for (String i : dc.creators) {
-                        dcS.addCreator(i);
-                        atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.languages) {
+                if (dc!!.languages != null) {
+                    for (i in dc!!.languages!!) {
+                        dcS.addLanguage(i)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             } else if (dcOld != null) {
-                List<String> old = dcOld.getCreators();
+                val old = dcOld.languages
                 if (old != null) {
-                    for (String a : old) {
-                        dcS.addCreator(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addLanguage(a)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             }
             //
-            if (dcEnabled.coverage) {
-                if (dc.coverage != null) {
-                    dcS.setCoverage(dc.coverage);
-                    atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.creators) {
+                if (dc!!.creators != null) {
+                    for (i in dc!!.creators!!) {
+                        dcS.addCreator(i)
+                        atLeastOneXmpDcSet = true
+                    }
                 }
             } else if (dcOld != null) {
-                String old = dcOld.getCoverage();
+                val old = dcOld.creators
                 if (old != null) {
-                    dcS.setCoverage(old);
-                    atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addCreator(a)
+                        atLeastOneXmpDcSet = true
+                    }
                 }
             }
-
-            if (dcEnabled.format) {
-                if (dc.format != null) {
-                    dcS.setFormat(dc.format);
-                    atLeastOneXmpDcSet = true;
+            //
+            if (dcEnabled!!.coverage) {
+                if (dc!!.coverage != null) {
+                    dcS.coverage = dc!!.coverage
+                    atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
-                String old = dcOld.getFormat();
+                val old = dcOld.coverage
                 if (old != null) {
-                    dcS.setFormat(old);
-                    atLeastOneXmpDcSet = true;
+                    dcS.coverage = old
+                    atLeastOneXmpDcSet = true
                 }
             }
-
-            if (dcEnabled.identifier) {
-                if (dc.identifier != null) {
-                    dcS.setIdentifier(dc.identifier);
-                    atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.format) {
+                if (dc!!.format != null) {
+                    dcS.format = dc!!.format
+                    atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
-                String old = dcOld.getIdentifier();
+                val old = dcOld.format
                 if (old != null) {
-                    dcS.setIdentifier(old);
-                    atLeastOneXmpDcSet = true;
+                    dcS.format = old
+                    atLeastOneXmpDcSet = true
                 }
             }
-
-            if (dcEnabled.rights) {
-                if (dc.rights != null) {
-                    dcS.addRights(null, dc.rights);
-                    atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.identifier) {
+                if (dc!!.identifier != null) {
+                    dcS.identifier = dc!!.identifier
+                    atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
-                List<String> rll = dcOld.getRightsLanguages();
+                val old = dcOld.identifier
+                if (old != null) {
+                    dcS.identifier = old
+                    atLeastOneXmpDcSet = true
+                }
+            }
+            if (dcEnabled!!.rights) {
+                if (dc!!.rights != null) {
+                    dcS.addRights(null, dc!!.rights)
+                    atLeastOneXmpDcSet = true
+                }
+            } else if (dcOld != null) {
+                val rll = dcOld.rightsLanguages
                 if (rll != null) {
-                    for (String rl : rll) {
-                        String rights = dcOld.getRights(rl);
+                    for (rl in rll) {
+                        val rights = dcOld.getRights(rl)
                         if (rights != null) {
-                            dcS.addRights(rl, rights);
-                            atLeastOneXmpDcSet = true;
+                            dcS.addRights(rl, rights)
+                            atLeastOneXmpDcSet = true
                         }
                     }
                 }
             }
-
-            if (dcEnabled.source) {
-                if (dc.source != null) {
-                    dcS.setSource(dc.source);
-                    atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.source) {
+                if (dc!!.source != null) {
+                    dcS.source = dc!!.source
+                    atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
-                String old = dcOld.getSource();
+                val old = dcOld.source
                 if (old != null) {
-                    dcS.setSource(old);
-                    atLeastOneXmpDcSet = true;
+                    dcS.source = old
+                    atLeastOneXmpDcSet = true
                 }
             }
-
-            if (dcEnabled.description) {
-                if (dc.description != null) {
-                    dcS.setDescription(dc.description);
-                    atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.description) {
+                if (dc!!.description != null) {
+                    dcS.description = dc!!.description
+                    atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
-                String old = dcOld.getDescription();
+                val old = dcOld.description
                 if (old != null) {
-                    dcS.setDescription(old);
-                    atLeastOneXmpDcSet = true;
+                    dcS.description = old
+                    atLeastOneXmpDcSet = true
                 }
             }
-
-            if (dcEnabled.dates) {
-                if (dc.dates != null) {
-                    for (Calendar date : dc.dates) {
-                        dcS.addDate(date);
-                        atLeastOneXmpDcSet = true;
+            if (dcEnabled!!.dates) {
+                if (dc!!.dates != null) {
+                    for (date in dc!!.dates!!) {
+                        dcS.addDate(date)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             } else if (dcOld != null) {
-                List<Calendar> old = dcOld.getDates();
+                val old = dcOld.dates
                 if (old != null) {
-                    for (Calendar a : old) {
-                        dcS.addDate(a);
-                        ;
-                        atLeastOneXmpDcSet = true;
+                    for (a in old) {
+                        dcS.addDate(a)
+                        atLeastOneXmpDcSet = true
                     }
                 }
             }
         }
 
         // XMP Rights
-        XMPRightsManagementSchema riOld = xmpOld != null ? xmpOld.getXMPRightsManagementSchema() : null;
-        boolean atLeastOneXmpRightsSet = false;
-        if (rightsEnabled.atLeastOne() || (riOld != null)) {
-            XMPRightsManagementSchema ri = xmpNew.createAndAddXMPRightsManagementSchema();
-
-            if (rightsEnabled.certificate) {
-                if (rights.certificate != null) {
-                    ri.setCertificate(rights.certificate);
-                    ;
-                    atLeastOneXmpRightsSet = true;
+        val riOld = xmpOld?.xmpRightsManagementSchema
+        var atLeastOneXmpRightsSet = false
+        if (rightsEnabled!!.atLeastOne() || riOld != null) {
+            val ri = xmpNew.createAndAddXMPRightsManagementSchema()
+            if (rightsEnabled!!.certificate) {
+                if (rights!!.certificate != null) {
+                    ri.certificate = rights!!.certificate
+                    atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
-                String old = riOld.getCertificate();
+                val old = riOld.certificate
                 if (old != null) {
-                    ri.setCertificate(old);
-                    atLeastOneXmpRightsSet = true;
+                    ri.certificate = old
+                    atLeastOneXmpRightsSet = true
                 }
             }
-
-            if (rightsEnabled.marked) {
-                if (rights.marked != null) {
-                    ri.setMarked(rights.marked);
-                    ;
-                    atLeastOneXmpRightsSet = true;
+            if (rightsEnabled!!.marked) {
+                if (rights!!.marked != null) {
+                    ri.marked = rights!!.marked
+                    atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
-                Boolean old = riOld.getMarked();
+                val old = riOld.marked
                 if (old != null) {
-                    ri.setMarked(old);
-                    atLeastOneXmpRightsSet = true;
+                    ri.marked = old
+                    atLeastOneXmpRightsSet = true
                 }
             }
-
-            if (rightsEnabled.owner) {
-                if (rights.owner != null) {
-                    for (String i : rights.owner) {
-                        ri.addOwner(i);
-                        atLeastOneXmpRightsSet = true;
+            if (rightsEnabled!!.owner) {
+                if (rights!!.owner != null) {
+                    for (i in rights!!.owner!!) {
+                        ri.addOwner(i)
+                        atLeastOneXmpRightsSet = true
                     }
                 }
             } else if (riOld != null) {
-                List<String> old = riOld.getOwners();
+                val old = riOld.owners
                 if (old != null) {
-                    for (String a : old) {
-                        ri.addOwner(a);
-                        atLeastOneXmpRightsSet = true;
+                    for (a in old) {
+                        ri.addOwner(a)
+                        atLeastOneXmpRightsSet = true
                     }
                 }
             }
-
-            if (rightsEnabled.usageTerms) {
-                if (rights.usageTerms != null) {
-                    ri.setUsageTerms(rights.usageTerms);
-                    atLeastOneXmpRightsSet = true;
+            if (rightsEnabled!!.usageTerms) {
+                if (rights!!.usageTerms != null) {
+                    ri.usageTerms = rights!!.usageTerms
+                    atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
-                String old = riOld.getUsageTerms();
+                val old = riOld.usageTerms
                 if (old != null) {
-                    ri.setUsageTerms(old);
-                    atLeastOneXmpRightsSet = true;
+                    ri.usageTerms = old
+                    atLeastOneXmpRightsSet = true
                 }
             }
-
-            if (rightsEnabled.webStatement) {
-                if (rights.webStatement != null) {
-                    ri.setWebStatement(rights.webStatement);
-                    atLeastOneXmpRightsSet = true;
+            if (rightsEnabled!!.webStatement) {
+                if (rights!!.webStatement != null) {
+                    ri.webStatement = rights!!.webStatement
+                    atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
-                String old = riOld.getWebStatement();
+                val old = riOld.webStatement
                 if (old != null) {
-                    ri.setWebStatement(old);
-                    atLeastOneXmpRightsSet = true;
+                    ri.webStatement = old
+                    atLeastOneXmpRightsSet = true
                 }
             }
-
         }
 
         // Do the save
-        if (basicEnabled.atLeastOne() || pdfEnabled.atLeastOne() || dcEnabled.atLeastOne() || rightsEnabled.atLeastOne() ||
-                atLeastOneXmpBasicSet || atLeastOneXmpPdfSet || atLeastOneXmpDcSet || atLeastOneXmpRightsSet) {
-            PDMetadata metadataStream = new PDMetadata(document);
+        if (basicEnabled!!.atLeastOne() || pdfEnabled!!.atLeastOne() || dcEnabled!!.atLeastOne() || rightsEnabled!!.atLeastOne() ||
+            atLeastOneXmpBasicSet || atLeastOneXmpPdfSet || atLeastOneXmpDcSet || atLeastOneXmpRightsSet
+        ) {
+            val metadataStream = PDMetadata(document)
             try {
-                XmpSerializer serializer = new XmpSerializer();
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                serializer.serialize(xmpNew, baos, true);
-                metadataStream.importXMPMetadata(baos.toByteArray());
-            } catch (TransformerException e) {
-                throw new Exception("Failed to save document:" + e.getMessage());
+                val serializer = XmpSerializer()
+                val baos = ByteArrayOutputStream()
+                serializer.serialize(xmpNew, baos, true)
+                metadataStream.importXMPMetadata(baos.toByteArray())
+            } catch (e: TransformerException) {
+                throw Exception("Failed to save document:" + e.message)
             }
-            catalog.setMetadata(metadataStream);
+            catalog.metadata = metadataStream
         }
-        document.save(pdfFile.getAbsolutePath());
+        document.save(pdfFile.absolutePath)
     }
 
-    public void saveAsPDF(File pdfFile) throws Exception {
-        saveAsPDF(pdfFile, null);
+    @JvmOverloads
+    @Throws(Exception::class)
+    fun saveAsPDF(pdfFile: File, newFile: File? = null) {
+        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30720))
+            .use { document -> saveToPDF(document, newFile ?: pdfFile) }
     }
 
-    public void saveAsPDF(File pdfFile, File newFile) throws Exception {
-        try (PDDocument document = Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720))) {
-            saveToPDF(document, newFile == null ? pdfFile : newFile);
-        }
+    fun copyDocToXMP() {
+        pdf!!.keywords = doc!!.keywords
+        pdf!!.producer = doc!!.producer
+        pdfEnabled!!.keywords = docEnabled!!.keywords
+        pdfEnabled!!.producer = docEnabled!!.producer
+        basic!!.createDate = doc!!.creationDate
+        basic!!.modifyDate = doc!!.modificationDate
+        basicEnabled!!.createDate = docEnabled!!.creationDate
+        basicEnabled!!.modifyDate = docEnabled!!.modificationDate
+        basic!!.creatorTool = doc!!.creator
+        basicEnabled!!.creatorTool = docEnabled!!.creator
+        dc!!.title = doc!!.title
+        dc!!.description = doc!!.subject
+        dc!!.creators = Arrays.asList(*arrayOf(doc!!.author))
+        dcEnabled!!.title = docEnabled!!.title
+        dcEnabled!!.description = docEnabled!!.subject
+        dcEnabled!!.creators = docEnabled!!.author
     }
 
-    public void copyDocToXMP() {
-        pdf.keywords = doc.keywords;
-        pdf.producer = doc.producer;
-        pdfEnabled.keywords = docEnabled.keywords;
-        pdfEnabled.producer = docEnabled.producer;
-
-        basic.createDate = doc.creationDate;
-        basic.modifyDate = doc.modificationDate;
-        basicEnabled.createDate = docEnabled.creationDate;
-        basicEnabled.modifyDate = docEnabled.modificationDate;
-
-        basic.creatorTool = doc.creator;
-        basicEnabled.creatorTool = docEnabled.creator;
-
-        dc.title = doc.title;
-        dc.description = doc.subject;
-        dc.creators = Arrays.asList(new String[]{doc.author});
-        dcEnabled.title = docEnabled.title;
-        dcEnabled.description = docEnabled.subject;
-        dcEnabled.creators = docEnabled.author;
-    }
-
-    public void copyXMPToDoc() {
-        doc.keywords = pdf.keywords;
-        doc.producer = pdf.producer;
-        docEnabled.keywords = pdfEnabled.keywords;
-        docEnabled.producer = pdfEnabled.producer;
-
-        doc.creationDate = basic.createDate;
-        doc.modificationDate = basic.modifyDate;
-        docEnabled.creationDate = basicEnabled.createDate;
-        docEnabled.modificationDate = basicEnabled.modifyDate;
-
-
-        doc.creator = basic.creatorTool;
-        docEnabled.creator = basicEnabled.creatorTool;
-
-        doc.title = dc.title;
-        doc.subject = dc.description;
-        String author = "";
-        if (dc.creators != null) {
-            String delim = "";
-            for (String creator : dc.creators) {
-                author += delim + creator;
-                delim = ", ";
+    fun copyXMPToDoc() {
+        doc!!.keywords = pdf!!.keywords
+        doc!!.producer = pdf!!.producer
+        docEnabled!!.keywords = pdfEnabled!!.keywords
+        docEnabled!!.producer = pdfEnabled!!.producer
+        doc!!.creationDate = basic!!.createDate
+        doc!!.modificationDate = basic!!.modifyDate
+        docEnabled!!.creationDate = basicEnabled!!.createDate
+        docEnabled!!.modificationDate = basicEnabled!!.modifyDate
+        doc!!.creator = basic!!.creatorTool
+        docEnabled!!.creator = basicEnabled!!.creatorTool
+        doc!!.title = dc!!.title
+        doc!!.subject = dc!!.description
+        var author: String? = ""
+        if (dc!!.creators != null) {
+            var delim = ""
+            for (creator in dc!!.creators!!) {
+                author += delim + creator
+                delim = ", "
             }
         } else {
-            author = null;
+            author = null
         }
-        doc.author = author;
-        docEnabled.title = dcEnabled.title;
-        docEnabled.subject = dcEnabled.description;
-        docEnabled.author = dcEnabled.creators;
-
+        doc!!.author = author
+        docEnabled!!.title = dcEnabled!!.title
+        docEnabled!!.subject = dcEnabled!!.description
+        docEnabled!!.author = dcEnabled!!.creators
     }
 
-    public void setEnabled(boolean value) {
-        docEnabled.setAll(value);
-        basicEnabled.setAll(value);
-        pdfEnabled.setAll(value);
-        dcEnabled.setAll(value);
-        rightsEnabled.setAll(value);
+    fun setEnabled(value: Boolean) {
+        docEnabled!!.setAll(value)
+        basicEnabled!!.setAll(value)
+        pdfEnabled!!.setAll(value)
+        dcEnabled!!.setAll(value)
+        rightsEnabled!!.setAll(value)
     }
 
-    public void setEnabled(String id, boolean value) {
-        _setObjectEnabled(id, value);
+    fun setEnabled(id: String, value: Boolean) {
+        _setObjectEnabled(id, value)
     }
 
-    public boolean isEnabled(String id) {
-        return _getObjectEnabled(id);
+    fun isEnabled(id: String): Boolean {
+        return _getObjectEnabled(id)
     }
 
-    public static List<String> keys() {
-        return new ArrayList<String>(_mdFields.keySet());
-    }
-
-    public static boolean keyIsWritable(String key) {
-        FieldDescription fd = getFieldDescription(key);
-        return (fd != null) ? fd.isWritable : false;
-    }
-
-    public <T> Map<String, T> asFlatMap(Function<Object, T> convertor) {
-        LinkedHashMap<String, T> map = new LinkedHashMap<String, T>();
-
-        for (String fieldName : keys()) {
-            Object o = get(fieldName);
-            map.put(fieldName, convertor.apply(o));
+    fun <T> asFlatMap(convertor: Function<Any?, T>): MutableMap<String, T> {
+        val map = LinkedHashMap<String, T>()
+        for (fieldName in keys()) {
+            val o = get(fieldName)
+            map[fieldName] = convertor.apply(o)
         }
-        return map;
+        return map
     }
 
-    public Map<String, Object> asFlatMap() {
-        return asFlatMap(t -> t);
+    fun asFlatMap(): MutableMap<String, Any?> {
+        return asFlatMap { t: Any? -> t }
     }
 
-    public Map<String, String> asFlatStringMap() {
-        LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
-
-        for (String fieldName : keys()) {
-            map.put(fieldName, getString(fieldName));
+    fun asFlatStringMap(): Map<String, String> {
+        val map = LinkedHashMap<String, String>()
+        for (fieldName in keys()) {
+            map[fieldName] = getString(fieldName)
         }
-        return map;
+        return map
     }
 
-
-    public void fromFlatMap(Map<String, Object> map, Function<Object, Object> convertor) {
-        for (String fieldName : keys()) {
+    fun fromFlatMap(map: Map<String?, Any?>, convertor: Function<Any?, Any?>) {
+        for (fieldName in keys()) {
             if (map.containsKey(fieldName)) {
-                set(fieldName, convertor.apply(map.get(fieldName)));
+                set(fieldName, convertor.apply(map[fieldName]))
             }
         }
     }
 
-    public MetadataInfo clone() {
-        MetadataInfo md = new MetadataInfo();
-        md.copyFrom(this);
-        return md;
+    override fun clone(): MetadataInfo {
+        val md = MetadataInfo()
+        md.copyFrom(this)
+        return md
     }
 
-    public void copyFrom(MetadataInfo other) {
-        for (String fieldName : keys()) {
-            set(fieldName, other.get(fieldName));
+    fun copyFrom(other: MetadataInfo) {
+        for (fieldName in keys()) {
+            set(fieldName, other[fieldName])
         }
     }
 
-    public void copyUnset(MetadataInfo other) {
-        for (String fieldName : keys()) {
-            Object o = get(fieldName);
+    fun copyUnset(other: MetadataInfo) {
+        for (fieldName in keys()) {
+            val o = get(fieldName)
             if (o == null) {
-                set(fieldName, other.get(fieldName));
+                set(fieldName, other[fieldName])
             }
         }
     }
 
-    public void copyUnsetExpanded(MetadataInfo other, MetadataInfo expandInfo) {
-        for (String fieldName : keys()) {
-            Object o = get(fieldName);
+    fun copyUnsetExpanded(other: MetadataInfo, expandInfo: MetadataInfo?) {
+        for (fieldName in keys()) {
+            val o = get(fieldName)
             if (o == null) {
-                Object otherVal = other.get(fieldName);
-                if (otherVal instanceof String) {
-                    TemplateString ts = new TemplateString((String) otherVal);
-                    otherVal = ts.process(expandInfo);
+                var otherVal = other[fieldName]
+                if (otherVal is String) {
+                    val ts = TemplateString(otherVal)
+                    otherVal = ts.process(expandInfo)
                 }
-                set(fieldName, otherVal);
+                set(fieldName, otherVal)
             }
         }
     }
 
-    public void expand(MetadataInfo expandInfo) {
-        for (String fieldName : keys()) {
-            Object o = get(fieldName);
+    fun expand(expandInfo: MetadataInfo?) {
+        for (fieldName in keys()) {
+            val o = get(fieldName)
             if (o != null) {
-                Object expandedVal = get(fieldName);
-                if (expandedVal instanceof String) {
-                    TemplateString ts = new TemplateString((String) expandedVal);
-                    expandedVal = ts.process(expandInfo);
+                var expandedVal = get(fieldName)
+                if (expandedVal is String) {
+                    val ts = TemplateString(expandedVal)
+                    expandedVal = ts.process(expandInfo)
                 }
-                set(fieldName, expandedVal);
+                set(fieldName, expandedVal)
             }
         }
     }
 
-    public void enableOnlyNonNull() {
-        Map<String, Object> values = asFlatMap();
-        docEnabled.setAll(false);
-        basicEnabled.setAll(false);
-        pdfEnabled.setAll(false);
-        dcEnabled.setAll(false);
-        rightsEnabled.setAll(false);
-        for (Map.Entry<String, Object> entry : values.entrySet()) {
-            if (entry.getValue() != null) {
-                setEnabled(entry.getKey(), true);
+    fun enableOnlyNonNull() {
+        val values: Map<String, Any?> = asFlatMap()
+        docEnabled!!.setAll(false)
+        basicEnabled!!.setAll(false)
+        pdfEnabled!!.setAll(false)
+        dcEnabled!!.setAll(false)
+        rightsEnabled!!.setAll(false)
+        for ((key, value) in values) {
+            if (value != null) {
+                setEnabled(key, true)
             }
         }
-
     }
 
-    public String toJson() {
-        return toJson(false);
-    }
-
-    public String toJson(boolean pretty) {
-        Map<String, Object> map = asFlatMap(t -> {
+    @JvmOverloads
+    fun toJson(pretty: Boolean = false): String {
+        val map: Map<String, Any?> = asFlatMap { t: Any? ->
             if (t != null) {
-                if (t instanceof Calendar) {
-                    return DateFormat.formatDateTimeFull((Calendar) t);
+                if (t is Calendar) {
+                    return@asFlatMap formatDateTimeFull((t as Calendar?)!!)
                 }
             }
-            return t;
-        });
-        GsonBuilder gson = new GsonBuilder().disableHtmlEscaping();
+            t
+        }
+        var gson = GsonBuilder().disableHtmlEscaping()
         if (pretty) {
-            gson = gson.setPrettyPrinting();
+            gson = gson.setPrettyPrinting()
         }
-        return gson.create().toJson(map);
+        return gson.create().toJson(map)
     }
 
-    public String toYAML() {
-        return toYAML(false);
-    }
-
-    public String toYAML(boolean pretty) {
-        DumperOptions options = new DumperOptions();
+    @JvmOverloads
+    fun toYAML(pretty: Boolean = false): String {
+        val options = DumperOptions()
         if (!pretty) {
-            options.setWidth(0xFFFF);
+            options.width = 0xFFFF
         }
-        Yaml yaml = new Yaml(options);
-        return yaml.dump(asFlatMap());
+        val yaml = Yaml(options)
+        return yaml.dump(asFlatMap())
     }
 
-    public void fromYAML(String yamlString) {
-        Yaml yaml = new Yaml();
-        Map<String, Object> map = yaml.load(yamlString);
-        fromFlatMap(map, t -> {
-            if (t instanceof Date) {
-                Calendar cal = Calendar.getInstance();
-                cal.setTime((Date) t);
-                return cal;
+    fun fromYAML(yamlString: String?) {
+        val yaml = Yaml()
+        val map = yaml.load<Map<String?, Any?>>(yamlString)
+        fromFlatMap(map) { t: Any? ->
+            if (t is Date) {
+                val cal = Calendar.getInstance()
+                cal.time = t
+                return@fromFlatMap cal
             }
-            return t;
-        });
+            t
+        }
     }
 
-    public boolean isEquivalent(MetadataInfo other) {
-        for (Entry<String, List<FieldDescription>> e : _mdFields.entrySet()) {
+    fun isEquivalent(other: MetadataInfo): Boolean {
+        for ((key, value) in _mdFields!!) {
             // Skip file.* fields, as they are read only and come from file metadata
-            if (e.getKey().startsWith("file.")) {
-                continue;
+            if (key.startsWith("file.")) {
+                continue
             }
-
-            Object t = get(e.getKey());
-            Object o = other.get(e.getKey());
-            FieldDescription fd = e.getValue().get(e.getValue().size() - 1);
+            val t = get(key)
+            val o = other[key]
+            val fd = value[value.size - 1]
             if (t == null) {
-                if (o == null) {
-                    continue;
+                return if (o == null) {
+                    continue
                 } else {
-                    return false;
+                    false
                 }
             }
-            if (fd.isList && (fd.type == FieldID.FieldType.DATE)) {
-                List<Calendar> tl = (List<Calendar>) t;
-                List<Calendar> ol = (List<Calendar>) o;
-                if (tl.size() != ol.size()) {
-                    return false;
+            if (fd.isList && fd.type === FieldID.FieldType.DATE) {
+                val tl = t as List<Calendar>
+                val ol = o as List<Calendar>
+                if (tl.size != ol.size) {
+                    return false
                 }
-                for (int i = 0; i < tl.size(); ++i) {
-                    Calendar tc = tl.get(i);
-                    Calendar oc = ol.get(i);
+                for (i in tl.indices) {
+                    val tc = tl[i]
+                    val oc = ol[i]
                     if (tc == null) {
-                        if (oc == null) {
-                            continue;
+                        return if (oc == null) {
+                            continue
                         } else {
-                            return false;
+                            false
                         }
                     }
-                    if ((tc.getTimeInMillis() / 1000) != (oc.getTimeInMillis() / 1000)) {
-                        return false;
+                    if (tc.timeInMillis / 1000 != oc.timeInMillis / 1000) {
+                        return false
                     }
                 }
-
-            } else if (t instanceof Calendar && o instanceof Calendar) {
-                if ((((Calendar) t).getTimeInMillis() / 1000) != (((Calendar) o).getTimeInMillis() / 1000)) {
-                    return false;
+            } else if (t is Calendar && o is Calendar) {
+                if (t.timeInMillis / 1000 != o.timeInMillis / 1000) {
+                    return false
                 }
-            } else if (!t.equals(o)) {
-                return false;
+            } else if (t != o) {
+                return false
             }
         }
-        return true;
+        return true
     }
 
-    public String asPersistenceString() {
-        Map<String, Object> map = asFlatMap();
+    fun asPersistenceString(): String {
+        val map = asFlatMap()
         // Don't store null values as they are the default
-        for (String key : _mdFields.keySet()) {
-            if (map.get(key) == null) {
-                map.remove(key);
+        for (key in _mdFields!!.keys) {
+            if (map[key] == null) {
+                map.remove(key)
             }
         }
-        Map<String, Boolean> enabledMap = new LinkedHashMap<String, Boolean>();
+        val enabledMap: MutableMap<String, Boolean> = LinkedHashMap()
         // Don't store true values as they are the default
-        for (String keyEnabled : _mdEnabledFields.keySet()) {
+        for (keyEnabled in _mdEnabledFields!!.keys) {
             if (!isEnabled(keyEnabled)) {
-                enabledMap.put(keyEnabled, false);
+                enabledMap[keyEnabled] = false
             }
         }
-        if (enabledMap.size() > 0) {
-            map.put("_enabled", enabledMap);
+        if (enabledMap.size > 0) {
+            map["_enabled"] = enabledMap
         }
-
-        DumperOptions options = new DumperOptions();
-
-        options.setWidth(0xFFFF);
-        Yaml yaml = new Yaml(options);
-        return yaml.dump(map);
+        val options = DumperOptions()
+        options.width = 0xFFFF
+        val yaml = Yaml(options)
+        return yaml.dump(map)
     }
 
-    public static MetadataInfo fromPersistenceString(String yamlString) {
-        Yaml yaml = new Yaml();
-        Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
-        MetadataInfo md = new MetadataInfo();
-        md.fromYAML(yamlString);
+    class FieldDescription {
+        val name: String
+        val field: Field
+        val type: FieldID.FieldType?
+        val isList: Boolean
+        val isWritable: Boolean
 
-        Object enMap = map.get("_enabled");
-        if (enMap != null && Map.class.isAssignableFrom(enMap.getClass())) {
-            Map<String, Object> enabledMap = (Map<String, Object>) enMap;
-
-            for (String fieldName : _mdEnabledFields.keySet()) {
-                if (enabledMap.containsKey(fieldName)) {
-                    md.setEnabled(fieldName, (Boolean) enabledMap.get(fieldName));
-                }
-            }
+        constructor(name: String, field: Field, type: FieldID.FieldType?, isWritable: Boolean) {
+            this.name = name
+            this.field = field
+            this.type = type
+            this.isWritable = isWritable
+            isList = MutableList::class.java.isAssignableFrom(field.type)
         }
 
-        return md;
-    }
-
-    public static class FieldDescription {
-        public final String name;
-        final Field field;
-        public final FieldID.FieldType type;
-        public final boolean isList;
-        public final boolean isWritable;
-
-        public FieldDescription(String name, Field field, FieldID.FieldType type, boolean isWritable) {
-            this.name = name;
-            this.field = field;
-            this.type = type;
-            this.isWritable = isWritable;
-            isList = List.class.isAssignableFrom(field.getType());
-        }
-
-        public FieldDescription(String name, Field field, boolean isWritable) {
-            Class<?> klass = field.getType();
-            if (Boolean.class.isAssignableFrom(klass)) {
-                this.type = FieldID.FieldType.BOOL;
-            } else if (Calendar.class.isAssignableFrom(klass)) {
-                this.type = FieldID.FieldType.DATE;
-            } else if (Integer.class.isAssignableFrom(klass)) {
-                this.type = FieldID.FieldType.INT;
-            } else if (Long.class.isAssignableFrom(klass)) {
-                this.type = FieldID.FieldType.LONG;
+        constructor(name: String, field: Field, isWritable: Boolean) {
+            val klass = field.type
+            if (Boolean::class.java.isAssignableFrom(klass)) {
+                type = FieldID.FieldType.BOOL
+            } else if (Calendar::class.java.isAssignableFrom(klass)) {
+                type = FieldID.FieldType.DATE
+            } else if (Int::class.java.isAssignableFrom(klass)) {
+                type = FieldID.FieldType.INT
+            } else if (Long::class.java.isAssignableFrom(klass)) {
+                type = FieldID.FieldType.LONG
             } else {
-                this.type = FieldID.FieldType.STRING;
+                type = FieldID.FieldType.STRING
             }
-            this.name = name;
-            this.field = field;
-            this.isWritable = isWritable;
-            isList = List.class.isAssignableFrom(klass);
+            this.name = name
+            this.field = field
+            this.isWritable = isWritable
+            isList = MutableList::class.java.isAssignableFrom(klass)
         }
 
-        public String makeStringFromValue(Object value) {
+        fun makeStringFromValue(value: Any?): String {
             if (value == null) {
-                return "";
+                return ""
+            }
+            return if (isList) {
+                humanReadable(value as List<*>?)
+            } else if (type === FieldID.FieldType.DATE) {
+                formatDateTime((value as Calendar?)!!)
+            } else if (type === FieldID.FieldType.BOOL) {
+                if (value as Boolean) "true" else "false"
+            } else {
+                value.toString()
+            }
+        }
+
+        fun makeValueFromString(value: String?): Any? {
+            if (value == null) {
+                return null
             }
             if (isList) {
-                return ListFormat.humanReadable((List) value);
-            } else if (type == FieldID.FieldType.DATE) {
-                return DateFormat.formatDateTime((Calendar) value);
-            } else if (type == FieldID.FieldType.BOOL) {
-                return ((Boolean) value) ? "true" : "false";
-            } else {
-                return value.toString();
-            }
-        }
-
-        public Object makeValueFromString(String value) {
-            if (value == null) {
-                return null;
-            }
-            if (isList) {
-                if (type == FieldID.FieldType.STRING) {
-                    return Arrays.asList(value);
-                } else if (type == FieldID.FieldType.TEXT) {
-                    return Arrays.asList(value.split("\n"));
-                } else if (type == FieldID.FieldType.INT) {
+                if (type === FieldID.FieldType.STRING) {
+                    return Arrays.asList(value)
+                } else if (type === FieldID.FieldType.TEXT) {
+                    return Arrays.asList(*value.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray())
+                } else if (type === FieldID.FieldType.INT) {
                     // TODO: possible allow comma separated interger list
-                    return Arrays.asList(Integer.parseInt(value));
-                } else if (type == FieldID.FieldType.BOOL) {
+                    return Arrays.asList(value.toInt())
+                } else if (type === FieldID.FieldType.BOOL) {
                     // TODO: possible allow comma separated boolean list
-                    String v = value.toLowerCase().trim();
-                    Boolean b = null;
-                    if (v.equals("true") || v.equals("yes")) b = true;
-                    if (v.equals("false") || v.equals("no")) b = false;
-                    return Arrays.asList(b);
-                } else if (type == FieldID.FieldType.DATE) {
-                    List<Calendar> rval = new ArrayList<Calendar>();
-                    for (String line : value.split("\n")) {
+                    val v = value.lowercase(Locale.getDefault()).trim { it <= ' ' }
+                    var b: Boolean? = null
+                    if (v == "true" || v == "yes") b = true
+                    if (v == "false" || v == "no") b = false
+                    return Arrays.asList(b)
+                } else if (type === FieldID.FieldType.DATE) {
+                    val rval: MutableList<Calendar> = ArrayList()
+                    for (line in value.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()) {
                         try {
-                            rval.add(DateFormat.parseDate(line.trim()));
-                        } catch (ParseError e) {
-                            throw new RuntimeException("makeValueFromString() Invalid date format:" + line);
+                            rval.add(parseDate(line.trim { it <= ' ' }))
+                        } catch (e: ParseError) {
+                            throw RuntimeException("makeValueFromString() Invalid date format:$line")
                         }
                     }
-                    return rval;
+                    return rval
                 }
             } else {
-                if (type == FieldID.FieldType.STRING) {
-                    return value;
-                } else if (type == FieldID.FieldType.TEXT) {
-                    return value;
-                } else if (type == FieldID.FieldType.INT) {
-                    return Integer.parseInt(value);
-                } else if (type == FieldID.FieldType.BOOL) {
-                    String v = value.toLowerCase().trim();
-                    if (v.equals("true") || v.equals("yes")) return true;
-                    if (v.equals("false") || v.equals("no")) return false;
-                    return null;
-                } else if (type == FieldID.FieldType.DATE) {
-                    try {
-                        return DateFormat.parseDate(value);
-                    } catch (ParseError e) {
-                        throw new RuntimeException("makeValueFromString() Invalid date format:" + value);
+                if (type === FieldID.FieldType.STRING) {
+                    return value
+                } else if (type === FieldID.FieldType.TEXT) {
+                    return value
+                } else if (type === FieldID.FieldType.INT) {
+                    return value.toInt()
+                } else if (type === FieldID.FieldType.BOOL) {
+                    val v = value.lowercase(Locale.getDefault()).trim { it <= ' ' }
+                    if (v == "true" || v == "yes") return true
+                    return if (v == "false" || v == "no") false else null
+                } else if (type === FieldID.FieldType.DATE) {
+                    return try {
+                        parseDate(value)
+                    } catch (e: ParseError) {
+                        throw RuntimeException("makeValueFromString() Invalid date format:$value")
                     }
                 }
             }
-            throw new RuntimeException("makeValueFromString() :Don't know how to convert to type:" + type);
+            throw RuntimeException("makeValueFromString() :Don't know how to convert to type:$type")
         }
     }
 
-    private static void traverseFields(List<FieldDescription> ancestors, boolean all, Class<?> klass, MdStruct.StructType mdType, Consumer<List<FieldDescription>> consumer) {
-        for (Field field : klass.getFields()) {
-            MdStruct mdStruct = field.getAnnotation(MdStruct.class);
-            if (mdStruct != null && mdStruct.type() == mdType) {
-                String prefix = ancestors.size() > 0 ? ancestors.get(ancestors.size() - 1).name : "";
-                if (prefix.length() > 0) {
-                    prefix += ".";
-                }
-                String name = mdStruct.name().length() > 0 ? mdStruct.name() : field.getName();
-                FieldDescription t = new FieldDescription(prefix + name, field, null, mdStruct.access() == MdStruct.Access.READ_WRITE);
-                List<FieldDescription> a = new ArrayList<FieldDescription>(ancestors);
-                a.add(t);
-                traverseFields(a, true, field.getType(), mdType, consumer);
-            } else {
-                FieldID fieldId = field.getAnnotation(FieldID.class);
-                boolean isParentWritable = (ancestors.size() > 0) ? ancestors.get(ancestors.size() - 1).isWritable : true;
-                if (fieldId != null) {
-                    String prefix = ancestors.size() > 0 ? ancestors.get(ancestors.size() - 1).name : "";
-                    if (prefix.length() > 0) {
-                        prefix += ".";
-                    }
-                    FieldDescription t = new FieldDescription(prefix + fieldId.value(), field, fieldId.type(), isParentWritable);
-                    List<FieldDescription> a = new ArrayList<FieldDescription>(ancestors);
-                    a.add(t);
-                    consumer.accept(a);
-                } else if (all) {
-                    String prefix = ancestors.size() > 0 ? ancestors.get(ancestors.size() - 1).name : "";
-                    if (prefix.length() > 0) {
-                        prefix += ".";
-                    }
-                    FieldDescription t = new FieldDescription(prefix + field.getName(), field, isParentWritable);
-                    List<FieldDescription> a = new ArrayList<FieldDescription>(ancestors);
-                    a.add(t);
-                    consumer.accept(a);
-                }
-            }
-        }
+    init {
+        clear()
     }
 
-    final static Map<String, List<FieldDescription>> _mdFields;
-    final static Map<String, List<FieldDescription>> _mdEnabledFields;
-
-    static {
-        _mdFields = new LinkedHashMap<String, List<FieldDescription>>();
-        _mdEnabledFields = new LinkedHashMap<String, List<FieldDescription>>();
-        traverseFields(new ArrayList<>(), false, MetadataInfo.class, StructType.MD_STRUCT, fieldDescs -> {
-            if (fieldDescs.size() > 0) {
-                _mdFields.put(fieldDescs.get(fieldDescs.size() - 1).name, fieldDescs);
-            }
-        });
-        traverseFields(new ArrayList<>(), false, MetadataInfo.class, StructType.MD_ENABLE_STRUCT, fieldDescs -> {
-            if (fieldDescs.size() > 0) {
-                _mdEnabledFields.put(fieldDescs.get(fieldDescs.size() - 1).name, fieldDescs);
-            }
-        });
-    }
-
-    protected Object getStructObject(String id, Map<String, List<FieldDescription>> mdFields, boolean parent, boolean toString, boolean useDefault, Object defaultValue) {
-        List<FieldDescription> fields = mdFields.get(id);
-        if (fields == null || fields.size() == 0) {
+    protected fun getStructObject(
+        id: String,
+        mdFields: Map<String, List<FieldDescription>>?,
+        parent: Boolean,
+        toString: Boolean,
+        useDefault: Boolean,
+        defaultValue: Any
+    ): Any {
+        val fields = mdFields!![id]
+        if (fields == null || fields.size == 0) {
             if (useDefault) {
-                return defaultValue;
+                return defaultValue
             }
-            throw new RuntimeException("getStructObject: No field for '" + id + "'");
+            throw RuntimeException("getStructObject: No field for '$id'")
         }
-        Object current = this;
-        FieldDescription fieldD = null;
-        for (int i = 0; i < fields.size() - (parent ? 1 : 0); ++i) {
+        var current: Any = this
+        var fieldD: FieldDescription? = null
+        for (i in 0 until fields.size - if (parent) 1 else 0) {
             try {
-                fieldD = fields.get(i);
-                current = fieldD.field.get(current);
-            } catch (IllegalArgumentException e) {
+                fieldD = fields[i]
+                current = fieldD.field[current]
+            } catch (e: IllegalArgumentException) {
                 if (useDefault) {
-                    return defaultValue;
+                    return defaultValue
                 }
-                throw new RuntimeException("_getStructObject('" + id + "') IllegalArgumentException:" + e.toString());
-            } catch (IllegalAccessException e) {
+                throw RuntimeException("_getStructObject('$id') IllegalArgumentException:$e")
+            } catch (e: IllegalAccessException) {
                 if (useDefault) {
-                    return defaultValue;
+                    return defaultValue
                 }
-                throw new RuntimeException("_getStructObject('" + id + "') IllegalAccessException" + e.toString());
+                throw RuntimeException("_getStructObject('$id') IllegalAccessException$e")
             }
         }
-        if (toString) {
-            return fieldD.makeStringFromValue(current);
+        return if (toString) {
+            fieldD!!.makeStringFromValue(current)
+        } else current
+    }
+
+    operator fun get(id: String): Any {
+        return getStructObject(id, _mdFields, false, false, false, null)
+    }
+
+    fun getString(id: String): String {
+        return getStructObject(id, _mdFields, false, true, false, null) as String
+    }
+
+    operator fun get(id: String, defaultValue: Any): Any {
+        return getStructObject(id, _mdFields, false, false, true, defaultValue)
+    }
+
+    fun getString(id: String, defaultValue: String): String {
+        return getStructObject(id, _mdFields, false, true, true, defaultValue) as String
+    }
+
+    protected fun _getObjectEnabled(id: String): Boolean {
+        return getStructObject(id, _mdEnabledFields, false, false, true, false) as Boolean
+    }
+
+    protected fun _setStructObject(
+        id: String,
+        value: Any?,
+        append: Boolean,
+        fromString: Boolean,
+        mdFields: Map<String, List<FieldDescription>>?
+    ) {
+        var value = value
+        val fields = mdFields!![id]
+        if (fields == null || fields.size == 0) {
+            throw RuntimeException("_setStructObject('$id') No such field")
         }
-        return current;
-    }
-
-    public Object get(String id) {
-        return getStructObject(id, _mdFields, false, false, false, null);
-    }
-
-    public String getString(String id) {
-        return (String) getStructObject(id, _mdFields, false, true, false, null);
-    }
-
-    public Object get(String id, Object defaultValue) {
-        return getStructObject(id, _mdFields, false, false, true, defaultValue);
-    }
-
-    public String getString(String id, String defaultValue) {
-        return (String) getStructObject(id, _mdFields, false, true, true, defaultValue);
-    }
-
-    protected boolean _getObjectEnabled(String id) {
-        return (Boolean) getStructObject(id, _mdEnabledFields, false, false, true, false);
-    }
-
-    protected void _setStructObject(String id, Object value, boolean append, boolean fromString, Map<String, List<FieldDescription>> mdFields) {
-        List<FieldDescription> fields = mdFields.get(id);
-        if (fields == null || fields.size() == 0) {
-            throw new RuntimeException("_setStructObject('" + id + "') No such field");
-        }
-        Object current = getStructObject(id, mdFields, true, false, false, null);
-        if (current == null) {
-            throw new RuntimeException("_setStructObject('" + id + "') No such field");
-        }
+        val current = getStructObject(id, mdFields, true, false, false, null)
+            ?: throw RuntimeException("_setStructObject('$id') No such field")
         try {
-            FieldDescription fieldD = fields.get(fields.size() - 1);
-            if (fromString && (value != null)) {
-                value = fieldD.makeValueFromString(value.toString());
+            val fieldD = fields[fields.size - 1]
+            if (fromString && value != null) {
+                value = fieldD.makeValueFromString(value.toString())
             }
             if (fieldD.isList && append) {
-                List<Object> l = (List<Object>) fieldD.field.get(current);
+                var l = fieldD.field[current] as MutableList<Any?>
                 if (l == null) {
-                    l = new ArrayList<Object>();
+                    l = ArrayList()
                 }
-                if (List.class.isAssignableFrom(value.getClass())) {
-                    l.addAll((List) value);
+                if (MutableList::class.java.isAssignableFrom(value!!.javaClass)) {
+                    l.addAll((value as List<*>?)!!)
                 } else {
-                    l.add(value);
+                    l.add(value)
                 }
-                fieldD.field.set(current, l);
+                fieldD.field[current] = l
             } else {
-                fieldD.field.set(current, value);
+                fieldD.field[current] = value
             }
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("_setStructObject('" + id + "') IllegalArgumentException:" + e.toString());
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("_setStructObject('" + id + "') IllegalAccessException" + e.toString());
+        } catch (e: IllegalArgumentException) {
+            throw RuntimeException("_setStructObject('$id') IllegalArgumentException:$e")
+        } catch (e: IllegalAccessException) {
+            throw RuntimeException("_setStructObject('$id') IllegalAccessException$e")
         }
     }
 
-    public void set(String id, Object value) {
-        _setStructObject(id, value, false, false, _mdFields);
+    operator fun set(id: String, value: Any?) {
+        _setStructObject(id, value, false, false, _mdFields)
     }
 
-    public void setAppend(String id, Object value) {
-        _setStructObject(id, value, true, false, _mdFields);
+    fun setAppend(id: String, value: Any?) {
+        _setStructObject(id, value, true, false, _mdFields)
     }
 
-    public void setFromString(String id, String value) {
-        _setStructObject(id, value, false, true, _mdFields);
+    fun setFromString(id: String, value: String?) {
+        _setStructObject(id, value, false, true, _mdFields)
     }
 
-    public void setAppendFromString(String id, String value) {
-        _setStructObject(id, value, true, true, _mdFields);
+    fun setAppendFromString(id: String, value: String?) {
+        _setStructObject(id, value, true, true, _mdFields)
     }
 
-    protected void _setObjectEnabled(String id, boolean value) {
-        _setStructObject(id, value, false, false, _mdEnabledFields);
+    protected fun _setObjectEnabled(id: String, value: Boolean) {
+        _setStructObject(id, value, false, false, _mdEnabledFields)
     }
 
-    public static FieldDescription getFieldDescription(String id) {
-        List<FieldDescription> fields = _mdFields.get(id);
-        if (fields.size() > 0) {
-            return fields.get(fields.size() - 1);
+    companion object {
+        protected var hrSizes = arrayOf("B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+        fun keys(): List<String> {
+            return ArrayList(_mdFields!!.keys)
         }
-        return null;
+
+        fun keyIsWritable(key: String): Boolean {
+            val fd = getFieldDescription(key)
+            return fd?.isWritable ?: false
+        }
+
+        fun fromPersistenceString(yamlString: String?): MetadataInfo {
+            val yaml = Yaml()
+            val map = yaml.load<Any>(yamlString) as Map<String, Any>
+            val md = MetadataInfo()
+            md.fromYAML(yamlString)
+            val enMap = map["_enabled"]
+            if (enMap != null && MutableMap::class.java.isAssignableFrom(enMap.javaClass)) {
+                val enabledMap = enMap as Map<String, Any>
+                for (fieldName in _mdEnabledFields!!.keys) {
+                    if (enabledMap.containsKey(fieldName)) {
+                        md.setEnabled(fieldName, (enabledMap[fieldName] as Boolean?)!!)
+                    }
+                }
+            }
+            return md
+        }
+
+        private fun traverseFields(
+            ancestors: List<FieldDescription>,
+            all: Boolean,
+            klass: Class<*>,
+            mdType: StructType,
+            consumer: Consumer<List<FieldDescription>>
+        ) {
+            for (field in klass.fields) {
+                val mdStruct = field.getAnnotation(MdStruct::class.java)
+                if (mdStruct != null && mdStruct.type === mdType) {
+                    var prefix = if (ancestors.size > 0) ancestors[ancestors.size - 1].name else ""
+                    if (prefix.length > 0) {
+                        prefix += "."
+                    }
+                    val name = if (mdStruct.name.length > 0) mdStruct.name else field.name
+                    val t = FieldDescription(prefix + name, field, null, mdStruct.access === MdStruct.Access.READ_WRITE)
+                    val a: MutableList<FieldDescription> = ArrayList(ancestors)
+                    a.add(t)
+                    traverseFields(a, true, field.type, mdType, consumer)
+                } else {
+                    val fieldId = field.getAnnotation(FieldID::class.java)
+                    val isParentWritable = if (ancestors.size > 0) ancestors[ancestors.size - 1].isWritable else true
+                    if (fieldId != null) {
+                        var prefix = if (ancestors.size > 0) ancestors[ancestors.size - 1].name else ""
+                        if (prefix.length > 0) {
+                            prefix += "."
+                        }
+                        val t = FieldDescription(prefix + fieldId.value, field, fieldId.type, isParentWritable)
+                        val a: MutableList<FieldDescription> = ArrayList(ancestors)
+                        a.add(t)
+                        consumer.accept(a)
+                    } else if (all) {
+                        var prefix = if (ancestors.size > 0) ancestors[ancestors.size - 1].name else ""
+                        if (prefix.length > 0) {
+                            prefix += "."
+                        }
+                        val t = FieldDescription(prefix + field.name, field, isParentWritable)
+                        val a: MutableList<FieldDescription> = ArrayList(ancestors)
+                        a.add(t)
+                        consumer.accept(a)
+                    }
+                }
+            }
+        }
+
+        val _mdFields: MutableMap<String, List<FieldDescription>>? = null
+        val _mdEnabledFields: MutableMap<String, List<FieldDescription>>? = null
+
+        init {
+            _mdFields = LinkedHashMap()
+            _mdEnabledFields = LinkedHashMap()
+            traverseFields(
+                ArrayList(),
+                false,
+                MetadataInfo::class.java,
+                StructType.MD_STRUCT
+            ) { fieldDescs: List<FieldDescription> ->
+                if (fieldDescs.size > 0) {
+                    _mdFields[fieldDescs[fieldDescs.size - 1].name] = fieldDescs
+                }
+            }
+            traverseFields(
+                ArrayList(),
+                false,
+                MetadataInfo::class.java,
+                StructType.MD_ENABLE_STRUCT
+            ) { fieldDescs: List<FieldDescription> ->
+                if (fieldDescs.size > 0) {
+                    _mdEnabledFields[fieldDescs[fieldDescs.size - 1].name] = fieldDescs
+                }
+            }
+        }
+
+        fun getFieldDescription(id: String): FieldDescription? {
+            val fields = _mdFields!![id]!!
+            return if (fields.size > 0) {
+                fields[fields.size - 1]
+            } else null
+        }
+
+        @JvmStatic
+        val sampleMetadata: MetadataInfo
+            get() {
+                val md = MetadataInfo()
+                // Spec is at : http://partners.adobe.com/public/developer/en/xmp/sdk/XMPspecification.pdf
+                md.doc!!.title = "Dracula"
+                md.doc!!.author = "Bram Stoker"
+                md.doc!!.subject =
+                    "Horror tales, Epistolary fiction, Gothic fiction (Literary genre), Vampires -- Fiction, Dracula, Count (Fictitious character) -- Fiction, Transylvania (Romania) -- Fiction, Whitby (England) -- Fiction"
+                md.doc!!.keywords = "Horror, Gothic, Vampires"
+                md.doc!!.creator = "Adobe InDesign CS4 (6.0.6)"
+                md.doc!!.producer = "Adobe PDF Library 9.0"
+                md.doc!!.creationDate = parseDateOrNull("2012-12-12 00:00:00")
+                md.doc!!.modificationDate = parseDateOrNull("2012-12-13 00:00:00")
+                md.doc!!.trapped = "True"
+                md.basic!!.creatorTool = "Adobe InDesign CS4 (6.0.6)"
+                md.basic!!.createDate = md.doc!!.creationDate
+                md.basic!!.modifyDate = md.doc!!.modificationDate
+                md.basic!!.baseURL = "https://www.gutenberg.org/"
+                md.basic!!.rating = 3
+                md.basic!!.label = "Horror Fiction Collection"
+                md.basic!!.nickname = "dracula"
+                md.basic!!.identifiers = mutableListOf("Dracula_original_edition")
+                //md.xmpBasic.advisories ;
+                md.basic!!.metadataDate = parseDateOrNull("2012-12-14 00:00:00")
+                md.pdf!!.pdfVersion = "1.5"
+                md.pdf!!.keywords = md.doc!!.keywords
+                md.pdf!!.producer = "Adobe PDF Library 9.0"
+                md.dc!!.title = md.doc!!.title
+                md.dc!!.description = "The famous Bram Stocker book"
+                md.dc!!.creators = ArrayList()
+                md.dc!!.creators.add("Bram Stocker")
+                md.dc!!.subjects =
+                    Arrays.asList(*md.doc!!.subject!!.split("\\s*,\\s*".toRegex()).dropLastWhile { it.isEmpty() }
+                        .toTypedArray())
+                return md
+            }
     }
-
-    public static MetadataInfo getSampleMetadata() {
-        MetadataInfo md = new MetadataInfo();
-        // Spec is at : http://partners.adobe.com/public/developer/en/xmp/sdk/XMPspecification.pdf
-        md.doc.title = "Dracula";
-        md.doc.author = "Bram Stoker";
-        md.doc.subject = "Horror tales, Epistolary fiction, Gothic fiction (Literary genre), Vampires -- Fiction, Dracula, Count (Fictitious character) -- Fiction, Transylvania (Romania) -- Fiction, Whitby (England) -- Fiction";
-        md.doc.keywords = "Horror, Gothic, Vampires";
-        md.doc.creator = "Adobe InDesign CS4 (6.0.6)";
-        md.doc.producer = "Adobe PDF Library 9.0";
-        md.doc.creationDate = DateFormat.parseDateOrNull("2012-12-12 00:00:00");
-        md.doc.modificationDate = DateFormat.parseDateOrNull("2012-12-13 00:00:00");
-        md.doc.trapped = "True";
-
-        md.basic.creatorTool = "Adobe InDesign CS4 (6.0.6)";
-        md.basic.createDate = md.doc.creationDate;
-        md.basic.modifyDate = md.doc.modificationDate;
-        md.basic.baseURL = "https://www.gutenberg.org/";
-        md.basic.rating = 3;
-        md.basic.label = "Horror Fiction Collection";
-        md.basic.nickname = "dracula";
-        md.basic.identifiers = Arrays.asList("Dracula_original_edition");
-        //md.xmpBasic.advisories ;
-        md.basic.metadataDate = DateFormat.parseDateOrNull("2012-12-14 00:00:00");
-
-        md.pdf.pdfVersion = "1.5";
-        md.pdf.keywords = md.doc.keywords;
-        md.pdf.producer = "Adobe PDF Library 9.0";
-
-        md.dc.title = md.doc.title;
-        md.dc.description = "The famous Bram Stocker book";
-        md.dc.creators = new ArrayList<String>();
-        md.dc.creators.add("Bram Stocker");
-        md.dc.subjects = Arrays.asList(md.doc.subject.split("\\s*,\\s*"));
-
-        return md;
-    }
-
-
 }

@@ -1,194 +1,161 @@
-package app.pdfx;
+package app.pdfx
 
-import app.pdfx.CommandLine.ParseError;
-import app.pdfx.prefs.FilePreferencesFactory;
+import app.pdfx.CommandLine.Companion.parse
+import app.pdfx.CommandLine.ParseError
+import app.pdfx.FileList.fileList
+import app.pdfx.prefs.FilePreferencesFactory
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
+import java.io.File
+import java.io.FileWriter
+import java.io.PrintWriter
+import java.util.concurrent.*
+import java.util.prefs.Preferences
+import javax.swing.JFrame
+import javax.swing.SwingWorker
 
-import javax.swing.*;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
-import java.util.prefs.Preferences;
-
-public class Main {
-
-    protected static int batchGuiCounter = 0;
-
-    public static String getBatchGuiCommand() {
-        return "batch-gui-" + batchGuiCounter++;
-    }
-
-    static BlockingQueue<CommandLine> cmdQueue = new LinkedBlockingDeque<CommandLine>();
-
-    static class CommandsExecutor extends SwingWorker<Void, CommandLine> {
-        CommandsExecutor() {
-            //initialize
-        }
-
-        @Override
-        public Void doInBackground() {
-            while (true) {
-                CommandLine cmdLine;
-                try {
-                    cmdLine = cmdQueue.take();
-                    logLine("publish", cmdLine.toString());
-
-                    publish(cmdLine);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        @Override
-        protected void process(List<CommandLine> chunks) {
-            for (CommandLine cmdLine : chunks) {
-                executeCommandSwingWorker(cmdLine);
-            }
-        }
-    }
+object Main {
+    internal var batchGuiCounter = 0
+    val batchGuiCommand: String
+        get() = "batch-gui-" + batchGuiCounter++
+    var cmdQueue: BlockingQueue<CommandLine?> = LinkedBlockingDeque()
 
     // this must be swing worker
-    public static void makeBatchWindow(final String commandName, final CommandDescription command, final List<String> fileList) {
-        logLine("makeBatchWindow", commandName);
-        BatchOperationWindow bs = new BatchOperationWindow(command);
-        bs.appendFiles(FileList.fileList(fileList));
-        bs.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        bs.addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(WindowEvent winEvt) {
-                batchInstances.remove(commandName);
-                maybeExit();
+    fun makeBatchWindow(commandName: String?, command: CommandDescription?, fileList: List<String?>?) {
+        logLine("makeBatchWindow", commandName)
+        val bs = BatchOperationWindow(command)
+        bs.appendFiles(fileList(fileList!!))
+        bs.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
+        bs.addWindowListener(object : WindowAdapter() {
+            override fun windowClosing(winEvt: WindowEvent) {
+                batchInstances.remove(commandName)
+                maybeExit()
             }
-        });
-        batchInstances.put(commandName, bs);
-        bs.setVisible(true);
+        })
+        batchInstances[commandName] = bs
+        bs.isVisible = true
     }
 
-    protected static void executeCommandSwingWorker(final CommandLine cmdLine) {
-        logLine("executeCommandSwingWorker", cmdLine.toString());
-
+    internal fun executeCommandSwingWorker(cmdLine: CommandLine) {
+        logLine("executeCommandSwingWorker", cmdLine.toString())
         if (cmdLine.hasCommand()) {
             try {
-                BatchOperationWindow bs = batchInstances.get(cmdLine.command.name);
+                val bs = batchInstances[cmdLine.command!!.name]
                 if (bs != null) {
-                    bs.appendFiles(FileList.fileList(cmdLine.fileList));
+                    bs.appendFiles(fileList(cmdLine.fileList))
                 } else {
-                    makeBatchWindow(cmdLine.command.name, cmdLine.command, cmdLine.fileList);
+                    makeBatchWindow(cmdLine.command!!.name, cmdLine.command, cmdLine.fileList)
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            return;
+            return
         }
         if (cmdLine.batchGui) {
-            makeBatchWindow(getBatchGuiCommand(), null, cmdLine.fileList);
-            return;
+            makeBatchWindow(batchGuiCommand, null, cmdLine.fileList)
+            return
         }
-        List<String> files = new ArrayList<String>(cmdLine.fileList);
-        if (files.size() == 0) {
-            files.add(null);
+        val files: MutableList<String?> = ArrayList(cmdLine.fileList)
+        if (files.size == 0) {
+            files.add(null)
         }
-        for (final String file : files) {
+        for (file in files) {
             try {
-                String fileAbsPath = file != null ? new File(file).getAbsolutePath() : null;
+                val fileAbsPath = if (file != null) File(file).absolutePath else null
                 // If we have file, and a single open empty window, load the file in it
-                if (fileAbsPath != null && editorInstances.size() == 1 && editorInstances.get(0).getCurrentFile() == null) {
-                    editorInstances.get(0).loadFile(fileAbsPath);
-                    return;
+                if (fileAbsPath != null && editorInstances.size == 1 && editorInstances[0].currentFile == null) {
+                    editorInstances[0].loadFile(fileAbsPath)
+                    return
                 }
-
-                logLine("executeCommand fileName", fileAbsPath);
-                for (PDFMetadataEditWindow window : editorInstances) {
-                    File wFile = window.getCurrentFile();
-                    logLine("check ", wFile != null ? wFile.getAbsolutePath() : null);
-                    if ((fileAbsPath == null && wFile == null) || (wFile != null && wFile.getAbsolutePath().equals(fileAbsPath))) {
-                        logLine("match", null);
-                        if (window.getState() == JFrame.ICONIFIED) {
-                            window.setState(JFrame.NORMAL);
+                logLine("executeCommand fileName", fileAbsPath)
+                for (window in editorInstances) {
+                    val wFile = window.currentFile
+                    logLine("check ", wFile?.absolutePath)
+                    if (fileAbsPath == null && wFile == null || wFile != null && wFile.absolutePath == fileAbsPath) {
+                        logLine("match", null)
+                        if (window.state == JFrame.ICONIFIED) {
+                            window.state = JFrame.NORMAL
                         }
-                        window.toFront();
-                        window.repaint();
-                        window.reloadFile();
-                        return;
+                        window.toFront()
+                        window.repaint()
+                        window.reloadFile()
+                        return
                     }
                 }
-                logLine("open editor", file);
-                final PDFMetadataEditWindow window = new PDFMetadataEditWindow(file);
-                window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                window.addWindowListener(new java.awt.event.WindowAdapter() {
-                    public void windowClosing(WindowEvent winEvt) {
-                        editorInstances.remove(window);
-                        maybeExit();
+                logLine("open editor", file)
+                val window = PDFMetadataEditWindow(file)
+                window.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
+                window.addWindowListener(object : WindowAdapter() {
+                    override fun windowClosing(winEvt: WindowEvent) {
+                        editorInstances.remove(window)
+                        maybeExit()
                     }
-                });
-                editorInstances.add(window);
-            } catch (Exception e) {
-                e.printStackTrace();
+                })
+                editorInstances.add(window)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-    public static void executeCommand(final CommandLine cmdLine) {
-        Main.logLine("executeCommand:", cmdLine.toString());
-
+    @JvmStatic
+    fun executeCommand(cmdLine: CommandLine?) {
+        logLine("executeCommand:", cmdLine.toString())
         try {
-            cmdQueue.put(cmdLine);
-        } catch (InterruptedException e) {
+            cmdQueue.put(cmdLine)
+        } catch (e: InterruptedException) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            e.printStackTrace()
         }
     }
 
-    final static String debugLog = System.getProperty("debugLog");
-
-    protected static void logLine(String context, String line) {
+    val debugLog = System.getProperty("debugLog")
+    internal fun logLine(context: String, line: String?) {
         if (debugLog == null) {
-            return;
+            return
         }
-        System.out.println(context + ":: " + line);
+        println("$context:: $line")
         try {
-            PrintWriter output = new PrintWriter(new FileWriter(System.getProperty("java.io.tmpdir") + File.separator + "pdf-metada-editor-log.txt", true));
-
-            output.printf("%s:: %s\r\n", context, line == null ? "null" : line);
-            output.close();
-        } catch (Exception e) {
+            val output = PrintWriter(
+                FileWriter(
+                    System.getProperty("java.io.tmpdir") + File.separator + "pdf-metada-editor-log.txt",
+                    true
+                )
+            )
+            output.printf("%s:: %s\r\n", context, line ?: "null")
+            output.close()
+        } catch (e: Exception) {
         }
     }
 
-    static Map<String, BatchOperationWindow> batchInstances = new HashMap<String, BatchOperationWindow>();
-    static List<PDFMetadataEditWindow> editorInstances = new ArrayList<PDFMetadataEditWindow>();
-
-    public static void maybeExit() {
-        if (batchInstances.size() == 0 && editorInstances.size() == 0 && cmdQueue.size() == 0) {
-            System.exit(0);
+    var batchInstances: MutableMap<String?, BatchOperationWindow> = HashMap()
+    var editorInstances: MutableList<PDFMetadataEditWindow> = ArrayList()
+    fun maybeExit() {
+        if (batchInstances.size == 0 && editorInstances.size == 0 && cmdQueue.size == 0) {
+            System.exit(0)
         }
     }
 
-    public static int numWindows() {
-        return batchInstances.size() + editorInstances.size();
+    fun numWindows(): Int {
+        return batchInstances.size + editorInstances.size
     }
 
-    public static void main(final String[] args) {
-        CommandLine cmdLine = null;
+    @JvmStatic
+    fun main(args: Array<String>) {
+        var cmdLine: CommandLine? = null
         try {
-            cmdLine = CommandLine.parse(args);
-        } catch (ParseError e) {
-            Main.logLine("ParseError", e.toString());
-            System.err.println(e);
-            return;
+            cmdLine = parse(args)
+        } catch (e: ParseError) {
+            logLine("ParseError", e.toString())
+            System.err.println(e)
+            return
         }
         //System.out.println(cmdLine);
-        if (cmdLine.noGui) {
-            MainCli.main(cmdLine);
-            return;
+        if (cmdLine!!.noGui) {
+            MainCli.main(cmdLine)
+            return
         }
-//	    try {
+        //	    try {
 //    	UIManager.setLookAndFeel(
 //    			UIManager.getCrossPlatformLookAndFeelClassName());
 //    } 
@@ -196,34 +163,57 @@ public class Main {
 //    catch (ClassNotFoundException e) {}
 //    catch (InstantiationException e) {}
 //    catch (IllegalAccessException e) {}
-        executeCommand(cmdLine);
-        Main.logLine("DDE:", "DONE");
-        CommandsExecutor commandsExecutor = new CommandsExecutor();
-        commandsExecutor.execute();
+        executeCommand(cmdLine)
+        logLine("DDE:", "DONE")
+        val commandsExecutor = CommandsExecutor()
+        commandsExecutor.execute()
 
         // Wait for at least on windows to open up, or the program
         // terminates without showing anything
         try {
             while (numWindows() == 0) {
                 try {
-                    commandsExecutor.get(50, TimeUnit.MILLISECONDS);
-                } catch (TimeoutException e) {
+                    commandsExecutor[50, TimeUnit.MILLISECONDS]
+                } catch (e: TimeoutException) {
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        } catch (e: ExecutionException) {
+            e.printStackTrace()
         }
     }
 
-    static Preferences _prefs;
-
-    public static Preferences getPreferences() {
-        if (_prefs == null) {
-            System.setProperty("java.util.prefs.PreferencesFactory", FilePreferencesFactory.class.getName());
-            _prefs = Preferences.userRoot().node("pdfxMetadataEditor");
+    var _prefs: Preferences? = null
+    @JvmStatic
+    val preferences: Preferences?
+        get() {
+            if (_prefs == null) {
+                System.setProperty("java.util.prefs.PreferencesFactory", FilePreferencesFactory::class.java.name)
+                _prefs = Preferences.userRoot().node("pdfxMetadataEditor")
+            }
+            return _prefs
         }
-        return _prefs;
+
+    internal class CommandsExecutor : SwingWorker<Void, CommandLine>() {
+        public override fun doInBackground(): Void {
+            while (true) {
+                var cmdLine: CommandLine
+                try {
+                    cmdLine = cmdQueue.take()
+                    logLine("publish", cmdLine.toString())
+                    publish(cmdLine)
+                } catch (e: InterruptedException) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        override fun process(chunks: List<CommandLine>) {
+            for (cmdLine in chunks) {
+                executeCommandSwingWorker(cmdLine)
+            }
+        }
     }
 }

@@ -1,176 +1,163 @@
-package app.pdfx.prefs;
+package app.pdfx.prefs
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.*;
-import java.util.prefs.AbstractPreferences;
-import java.util.prefs.BackingStoreException;
+import org.slf4j.LoggerFactory
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.*
+import java.util.prefs.AbstractPreferences
+import java.util.prefs.BackingStoreException
 
 /**
  * Preferences implementation that stores to a user-defined file. See FilePreferencesFactory.
  *
- * @author David Croft (<a href="http://www.davidc.net">www.davidc.net</a>)
+ * @author David Croft ([www.davidc.net](http://www.davidc.net))
  * @version $Id: FilePreferences.java 283 2009-06-18 17:06:58Z david $
  */
-public class FilePreferences extends AbstractPreferences {
-    private static final Logger log = LoggerFactory.getLogger(FilePreferences.class);
+class FilePreferences(parent: AbstractPreferences?, name: String) : AbstractPreferences(parent, name) {
+    private val root: MutableMap<String, String>
+    private val children: MutableMap<String, FilePreferences>
+    private var isRemoved = false
 
-    private final Map<String, String> root;
-    private final Map<String, FilePreferences> children;
-    private boolean isRemoved = false;
-
-    public FilePreferences(AbstractPreferences parent, String name) {
-        super(parent, name);
-
-        log.debug("Instantiating node " + name);
-
-        root = new TreeMap<String, String>();
-        children = new TreeMap<String, FilePreferences>();
-
+    init {
+        log.debug("Instantiating node $name")
+        root = TreeMap()
+        children = TreeMap()
         try {
-            sync();
-        } catch (BackingStoreException e) {
-            log.error("Unable to sync on creation of node " + name, e);
+            sync()
+        } catch (e: BackingStoreException) {
+            log.error("Unable to sync on creation of node $name", e)
         }
     }
 
-    protected void putSpi(String key, String value) {
-        root.put(key, value);
+    override fun putSpi(key: String, value: String) {
+        root[key] = value
         try {
-            flush();
-        } catch (BackingStoreException e) {
-            log.error("Unable to flush after putting " + key, e);
+            flush()
+        } catch (e: BackingStoreException) {
+            log.error("Unable to flush after putting $key", e)
         }
     }
 
-    protected String getSpi(String key) {
-        return root.get(key);
+    override fun getSpi(key: String): String {
+        return root[key]!!
     }
 
-    protected void removeSpi(String key) {
-        root.remove(key);
+    override fun removeSpi(key: String) {
+        root.remove(key)
         try {
-            flush();
-        } catch (BackingStoreException e) {
-            log.error("Unable to flush after removing " + key, e);
+            flush()
+        } catch (e: BackingStoreException) {
+            log.error("Unable to flush after removing $key", e)
         }
     }
 
-    protected void removeNodeSpi() throws BackingStoreException {
-        isRemoved = true;
-        flush();
+    @Throws(BackingStoreException::class)
+    override fun removeNodeSpi() {
+        isRemoved = true
+        flush()
     }
 
-    protected String[] keysSpi() throws BackingStoreException {
-        return root.keySet().toArray(new String[root.keySet().size()]);
+    @Throws(BackingStoreException::class)
+    override fun keysSpi(): Array<String> {
+        return root.keys.toTypedArray<String>()
     }
 
-    protected String[] childrenNamesSpi() throws BackingStoreException {
-        return children.keySet().toArray(new String[children.keySet().size()]);
+    @Throws(BackingStoreException::class)
+    override fun childrenNamesSpi(): Array<String> {
+        return children.keys.toTypedArray<String>()
     }
 
-    protected FilePreferences childSpi(String name) {
-        FilePreferences child = children.get(name);
+    override fun childSpi(name: String): FilePreferences {
+        var child = children[name]
         if (child == null || child.isRemoved()) {
-            child = new FilePreferences(this, name);
-            children.put(name, child);
+            child = FilePreferences(this, name)
+            children[name] = child
         }
-        return child;
+        return child
     }
 
-
-    protected void syncSpi() throws BackingStoreException {
-        if (isRemoved()) return;
-
-        final File file = FilePreferencesFactory.getPreferencesFile();
-
-        if (!file.exists()) return;
-
-        synchronized (file) {
-            Properties p = new Properties();
+    @Throws(BackingStoreException::class)
+    override fun syncSpi() {
+        if (isRemoved()) return
+        val file = FilePreferencesFactory.getPreferencesFile()
+        if (!file.exists()) return
+        synchronized(file) {
+            val p = Properties()
             try {
-                p.load(new FileInputStream(file));
-
-                StringBuilder sb = new StringBuilder();
-                getPath(sb);
-                String path = sb.toString();
-
-                final Enumeration<?> pnen = p.propertyNames();
+                p.load(FileInputStream(file))
+                val sb = StringBuilder()
+                getPath(sb)
+                val path = sb.toString()
+                val pnen = p.propertyNames()
                 while (pnen.hasMoreElements()) {
-                    String propKey = (String) pnen.nextElement();
+                    val propKey = pnen.nextElement() as String
                     if (propKey.startsWith(path)) {
-                        String subKey = propKey.substring(path.length());
+                        val subKey = propKey.substring(path.length)
                         // Only load immediate descendants
                         if (subKey.indexOf('.') == -1) {
-                            root.put(subKey, p.getProperty(propKey));
+                            root[subKey] = p.getProperty(propKey)
                         }
                     }
                 }
-            } catch (IOException e) {
-                throw new BackingStoreException(e);
+            } catch (e: IOException) {
+                throw BackingStoreException(e)
             }
         }
     }
 
-    private void getPath(StringBuilder sb) {
-        final FilePreferences parent = (FilePreferences) parent();
-        if (parent == null) return;
-
-        parent.getPath(sb);
-        sb.append(name()).append('.');
+    private fun getPath(sb: StringBuilder) {
+        val parent = parent() as FilePreferences ?: return
+        parent.getPath(sb)
+        sb.append(name()).append('.')
     }
 
-    protected void flushSpi() throws BackingStoreException {
-        final File file = FilePreferencesFactory.getPreferencesFile();
-
-        synchronized (file) {
-            Properties p = new Properties();
+    @Throws(BackingStoreException::class)
+    override fun flushSpi() {
+        val file = FilePreferencesFactory.getPreferencesFile()
+        synchronized(file) {
+            val p = Properties()
             try {
-
-                StringBuilder sb = new StringBuilder();
-                getPath(sb);
-                String path = sb.toString();
-
+                val sb = StringBuilder()
+                getPath(sb)
+                val path = sb.toString()
                 if (file.exists()) {
-                    p.load(new FileInputStream(file));
-
-                    List<String> toRemove = new ArrayList<String>();
+                    p.load(FileInputStream(file))
+                    val toRemove: MutableList<String> = ArrayList()
 
                     // Make a list of all direct children of this node to be removed
-                    final Enumeration<?> pnen = p.propertyNames();
+                    val pnen = p.propertyNames()
                     while (pnen.hasMoreElements()) {
-                        String propKey = (String) pnen.nextElement();
+                        val propKey = pnen.nextElement() as String
                         if (propKey.startsWith(path)) {
-                            String subKey = propKey.substring(path.length());
+                            val subKey = propKey.substring(path.length)
                             // Only do immediate descendants
                             if (subKey.indexOf('.') == -1) {
-                                toRemove.add(propKey);
+                                toRemove.add(propKey)
                             }
                         }
                     }
 
                     // Remove them now that the enumeration is done with
-                    for (String propKey : toRemove) {
-                        p.remove(propKey);
+                    for (propKey in toRemove) {
+                        p.remove(propKey)
                     }
                 }
 
                 // If this node hasn't been removed, add back in any values
                 if (!isRemoved) {
-                    for (String s : root.keySet()) {
-                        p.setProperty(path + s, root.get(s));
+                    for (s in root.keys) {
+                        p.setProperty(path + s, root[s])
                     }
                 }
-
-                p.store(new FileOutputStream(file), "FilePreferences");
-            } catch (IOException e) {
-                throw new BackingStoreException(e);
+                p.store(FileOutputStream(file), "FilePreferences")
+            } catch (e: IOException) {
+                throw BackingStoreException(e)
             }
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(FilePreferences::class.java)
     }
 }

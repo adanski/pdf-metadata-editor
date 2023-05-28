@@ -1,172 +1,181 @@
-package app.pdfx;
+package app.pdfx
 
-import java.util.*;
+import java.util.*
 
-public class CommandLine {
-    public static class ParseError extends Exception {
+class CommandLine {
+    class ParseError(string: String?) : Exception(string)
 
-        public ParseError(String string) {
-            super(string);
-        }
+    @JvmField
+    var fileList: MutableList<String> = ArrayList()
+    @JvmField
+    var noGui = System.getProperty("noGui") != null
+    @JvmField
+    var command: CommandDescription? = null
+    @JvmField
+    var params = BatchOperationParameters()
+    @JvmField
+    var batchGui = false
+    @JvmField
+    var showHelp = false
+
+    constructor()
+    constructor(fileList: MutableList<String>) {
+        this.fileList = fileList
     }
 
-    public static String mdFieldsHelpMessage(int lineLen, boolean markReadOnly) {
-        return mdFieldsHelpMessage(lineLen, "  ", "", markReadOnly);
+    constructor(fileList: MutableList<String>, batchGui: Boolean) {
+        this.fileList = fileList
+        this.batchGui = batchGui
     }
 
-    public static String mdFieldsHelpMessage(int lineLen, String pre, String post, boolean markReadOnly) {
-        int maxLen = 0;
-        for (String s : validMdNames) {
-            int additionalLength = (markReadOnly && !MetadataInfo.keyIsWritable(s) ? 1 : 0);
-            if (s.length() + additionalLength > maxLen) {
-                maxLen = s.length() + post.length() + additionalLength;
-            }
-        }
-        int ll = 0;
-        StringBuilder sb = new StringBuilder();
-        for (String s : validMdNames) {
-            sb.append(pre);
-            sb.append(String.format("%1$-" + maxLen + "s", s + (markReadOnly && !MetadataInfo.keyIsWritable(s) ? "*" : "") + post));
-            ll += maxLen + pre.length();
-            if (ll >= lineLen) {
-                sb.append('\n');
-                ll = 0;
-            }
-        }
-        if (ll != 0) {
-            sb.append('\n');
-        }
-        return sb.toString();
-    }
-
-    static Set<String> validMdNames = new LinkedHashSet<String>(MetadataInfo.keys());
-    public List<String> fileList = new ArrayList<String>();
-
-    public boolean noGui = System.getProperty("noGui") != null;
-    public CommandDescription command;
-    public BatchOperationParameters params = new BatchOperationParameters();
-    public boolean batchGui = false;
-    public boolean showHelp = false;
-
-    public CommandLine() {
-    }
-
-    public CommandLine(List<String> fileList) {
-        this.fileList = fileList;
-    }
-
-    public CommandLine(List<String> fileList, boolean batchGui) {
-        this.fileList = fileList;
-        this.batchGui = batchGui;
-    }
-
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("CommandLine(");
-        sb.append("noGui=");
-        sb.append(noGui);
-        sb.append(", ");
-        sb.append("batchGui=");
-        sb.append(batchGui);
-        sb.append(", ");
-        sb.append("showHelp=");
-        sb.append(showHelp);
-        sb.append(", ");
-        sb.append("command=");
-        sb.append(command != null ? command.name : "");
-        sb.append(", ");
-        sb.append("files=[");
-        Iterator<String> it = fileList.iterator();
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append("CommandLine(")
+        sb.append("noGui=")
+        sb.append(noGui)
+        sb.append(", ")
+        sb.append("batchGui=")
+        sb.append(batchGui)
+        sb.append(", ")
+        sb.append("showHelp=")
+        sb.append(showHelp)
+        sb.append(", ")
+        sb.append("command=")
+        sb.append(if (command != null) command!!.name else "")
+        sb.append(", ")
+        sb.append("files=[")
+        val it: Iterator<String> = fileList.iterator()
         while (it.hasNext()) {
-            sb.append(it.next());
+            sb.append(it.next())
             if (it.hasNext()) {
-                sb.append(", ");
+                sb.append(", ")
             }
         }
-        sb.append("])");
-        return sb.toString();
+        sb.append("])")
+        return sb.toString()
     }
 
-    public boolean hasCommand() {
-        return command != null;
+    fun hasCommand(): Boolean {
+        return command != null
     }
 
-    protected static int processOptions(int startIndex, List<String> args, CommandLine cmdLine) throws ParseError {
-        int i = startIndex;
-        while ((i < args.size()) && args.get(i).startsWith("-")) {
-            String arg = args.get(i).startsWith("--") ? args.get(i).substring(2) : args.get(i).substring(1);
-            if (arg.equalsIgnoreCase("nogui") || arg.equalsIgnoreCase("console")) {
-                cmdLine.noGui = true;
-            } else if (arg.equalsIgnoreCase("rt") || arg.equalsIgnoreCase("renameTemplate")) {
-                if (i + 1 < args.size()) {
-                    cmdLine.params.renameTemplate = args.get(i + 1);
-                    ++i;
+    companion object {
+        @JvmStatic
+        fun mdFieldsHelpMessage(lineLen: Int, markReadOnly: Boolean): String {
+            return mdFieldsHelpMessage(lineLen, "  ", "", markReadOnly)
+        }
+
+        @JvmStatic
+        fun mdFieldsHelpMessage(lineLen: Int, pre: String, post: String, markReadOnly: Boolean): String {
+            var maxLen = 0
+            for (s in validMdNames) {
+                val additionalLength = if (markReadOnly && !MetadataInfo.keyIsWritable(s)) 1 else 0
+                if (s.length + additionalLength > maxLen) {
+                    maxLen = s.length + post.length + additionalLength
+                }
+            }
+            var ll = 0
+            val sb = StringBuilder()
+            for (s in validMdNames) {
+                sb.append(pre)
+                sb.append(
+                    String.format(
+                        "%1$-" + maxLen + "s",
+                        s + (if (markReadOnly && !MetadataInfo.keyIsWritable(s)) "*" else "") + post
+                    )
+                )
+                ll += maxLen + pre.length
+                if (ll >= lineLen) {
+                    sb.append('\n')
+                    ll = 0
+                }
+            }
+            if (ll != 0) {
+                sb.append('\n')
+            }
+            return sb.toString()
+        }
+
+        @JvmField
+        var validMdNames: Set<String> = LinkedHashSet(MetadataInfo.keys())
+        @Throws(ParseError::class)
+        protected fun processOptions(startIndex: Int, args: List<String>, cmdLine: CommandLine): Int {
+            var i = startIndex
+            while (i < args.size && args[i].startsWith("-")) {
+                val arg = if (args[i].startsWith("--")) args[i].substring(2) else args[i].substring(1)
+                if (arg.equals("nogui", ignoreCase = true) || arg.equals("console", ignoreCase = true)) {
+                    cmdLine.noGui = true
+                } else if (arg.equals("rt", ignoreCase = true) || arg.equals("renameTemplate", ignoreCase = true)) {
+                    if (i + 1 < args.size) {
+                        cmdLine.params.renameTemplate = args[i + 1]
+                        ++i
+                    } else {
+                        throw ParseError("Missing argument for renameTemplate")
+                    }
+                } else if (arg.equals("h", ignoreCase = true) || arg.equals("help", ignoreCase = true)) {
+                    cmdLine.showHelp = true
                 } else {
-                    throw new ParseError("Missing argument for renameTemplate");
+                    throw ParseError("Invalid option: $arg")
                 }
-            } else if (arg.equalsIgnoreCase("h") || arg.equalsIgnoreCase("help")) {
-                cmdLine.showHelp = true;
-            } else {
-                throw new ParseError("Invalid option: " + arg);
+                ++i
             }
-            ++i;
+            return i
         }
-        return i;
-    }
 
-
-    public static CommandLine parse(String[] args) throws ParseError {
-        return parse(Arrays.asList(args));
-    }
-
-    public static CommandLine parse(List<String> args) throws ParseError {
-        CommandLine cmdLine = new CommandLine();
-        cmdLine.params.metadata.setEnabled(false);
-        int i = processOptions(0, args, cmdLine);
-        if (i < args.size()) {
-            cmdLine.command = CommandDescription.getBatchCommand(args.get(i));
-            if (cmdLine.command != null) {
-                ++i;
-            } else if (args.get(i).matches("^batch-gui-\\w+$")) {
-                cmdLine.batchGui = true;
-                ++i;
-            }
+        @JvmStatic
+        @Throws(ParseError::class)
+        fun parse(args: Array<String?>): CommandLine {
+            return parse(Arrays.asList(*args))
         }
-        while (i < args.size()) {
-            String arg = args.get(i);
-            boolean enable = true;
-            if (arg.charAt(0) == '!') {
-                enable = false;
-                arg = arg.substring(1);
-            }
-            int eqIndex = arg.indexOf("=");
-            if (eqIndex >= 0) {
-                String id = arg.substring(0, eqIndex);
-                if (validMdNames.contains(id)) {
-                    String value = arg.substring(eqIndex + 1).trim();
-                    cmdLine.params.metadata.setAppendFromString(id, value);
-                    cmdLine.params.metadata.setEnabled(id, enable);
+
+        @Throws(ParseError::class)
+        fun parse(args: List<String>): CommandLine {
+            val cmdLine = CommandLine()
+            cmdLine.params.metadata.setEnabled(false)
+            var i = processOptions(0, args, cmdLine)
+            if (i < args.size) {
+                cmdLine.command = CommandDescription.getBatchCommand(args[i])
+                if (cmdLine.command != null) {
+                    ++i
+                } else if (args[i].matches("^batch-gui-\\w+$".toRegex())) {
+                    cmdLine.batchGui = true
+                    ++i
                 }
-            } else if (validMdNames.contains(arg)) {
-                cmdLine.params.metadata.setEnabled(arg, enable);
-            } else if (arg.equals("all")) {
-                cmdLine.params.metadata.setEnabled(true);
-            } else if (arg.equals("none")) {
-                cmdLine.params.metadata.setEnabled(false);
-            } else if (args.get(i).equals("--")) {
-                ++i;
-                break;
-            } else {
-                break;
             }
-            ++i;
+            while (i < args.size) {
+                var arg = args[i]
+                var enable = true
+                if (arg[0] == '!') {
+                    enable = false
+                    arg = arg.substring(1)
+                }
+                val eqIndex = arg.indexOf("=")
+                if (eqIndex >= 0) {
+                    val id = arg.substring(0, eqIndex)
+                    if (validMdNames.contains(id)) {
+                        val value = arg.substring(eqIndex + 1).trim { it <= ' ' }
+                        cmdLine.params.metadata.setAppendFromString(id, value)
+                        cmdLine.params.metadata.setEnabled(id, enable)
+                    }
+                } else if (validMdNames.contains(arg)) {
+                    cmdLine.params.metadata.setEnabled(arg, enable)
+                } else if (arg == "all") {
+                    cmdLine.params.metadata.setEnabled(true)
+                } else if (arg == "none") {
+                    cmdLine.params.metadata.setEnabled(false)
+                } else if (args[i] == "--") {
+                    ++i
+                    break
+                } else {
+                    break
+                }
+                ++i
+            }
+            while (i < args.size) {
+                cmdLine.fileList.add(args[i])
+                ++i
+            }
+            return cmdLine
         }
-
-        while (i < args.size()) {
-            cmdLine.fileList.add(args.get(i));
-            ++i;
-        }
-        return cmdLine;
     }
-
 }

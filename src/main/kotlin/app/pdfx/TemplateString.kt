@@ -1,131 +1,88 @@
-package app.pdfx;
+package app.pdfx
 
-import java.util.ArrayList;
-import java.util.List;
-
-
-public class TemplateString {
-    public static interface Entity {
-        public String get(MetadataInfo md);
-
-        public boolean shrinkable();
+class TemplateString @JvmOverloads constructor(var template: String?, var length: Int = 0xFFFFFFF) {
+    interface Entity {
+        operator fun get(md: MetadataInfo): String
+        fun shrinkable(): Boolean
     }
 
-    ;
-
-    public static class Variable implements Entity {
-        String name;
-
-        public Variable(String name) {
-            this.name = name;
+    class Variable(var name: String) : Entity {
+        override fun get(md: MetadataInfo): String {
+            return md.getString(name, "")
         }
 
-        @Override
-        public String get(MetadataInfo md) {
-            return md.getString(name, "");
-        }
-
-        @Override
-        public boolean shrinkable() {
-            return true;
+        override fun shrinkable(): Boolean {
+            return true
         }
     }
 
-    public static class Literal implements Entity {
-        String literal;
-
-        public Literal(String literal) {
-            this.literal = literal;
+    class Literal(var literal: String) : Entity {
+        override fun get(md: MetadataInfo): String {
+            return literal
         }
 
-        @Override
-        public String get(MetadataInfo md) {
-            return literal;
-        }
-
-        @Override
-        public boolean shrinkable() {
-            return false;
+        override fun shrinkable(): Boolean {
+            return false
         }
     }
 
-    int length;
-    String template;
-    List<Entity> entityList;
-
-    public TemplateString(String template, int maxOutputLenght) {
-        length = maxOutputLenght;
-        this.template = template;
-    }
-
-    public TemplateString(String template) {
-        this(template, 0xFFFFFFF);
-    }
-
-    public void parse() {
-        entityList = new ArrayList<Entity>();
-        if (template == null)
-            return;
-        int idx = 0;
+    var entityList: MutableList<Entity>? = null
+    fun parse() {
+        entityList = ArrayList()
+        if (template == null) return
+        var idx = 0
         while (true) {
-            int openIdx = template.indexOf("{", idx);
-            if (openIdx > 0)
-                entityList.add(new Literal(template.substring(idx, openIdx)));
-            if (openIdx >= 0) {
-                int closeIdx = template.indexOf("}", openIdx);
+            val openIdx = template!!.indexOf("{", idx)
+            if (openIdx > 0) entityList.add(Literal(template!!.substring(idx, openIdx)))
+            idx = if (openIdx >= 0) {
+                val closeIdx = template!!.indexOf("}", openIdx)
                 if (closeIdx >= 0) {
-                    String varName = template.substring(openIdx + 1, closeIdx);
-                    entityList.add(new Variable(varName));
-                    idx = closeIdx + 1;
+                    val varName = template!!.substring(openIdx + 1, closeIdx)
+                    entityList.add(Variable(varName))
+                    closeIdx + 1
                 } else {
-                    entityList.add(new Literal(template.substring(openIdx)));
-                    break;
+                    entityList.add(Literal(template!!.substring(openIdx)))
+                    break
                 }
             } else {
-                entityList.add(new Literal(template.substring(idx)));
-                break;
+                entityList.add(Literal(template!!.substring(idx)))
+                break
             }
         }
     }
 
-    public String process(MetadataInfo md) {
-        if (entityList == null)
-            parse();
-        ArrayList<String> chunks = new ArrayList<String>();
-        ArrayList<Integer> resizable = new ArrayList<Integer>();
-        int outSize = 0;
-        for (int i = 0; i < entityList.size(); ++i) {
-            Entity e = entityList.get(i);
-            String value = e.get(md);
-            chunks.add(value);
-            if (e.shrinkable() && value.length() > 0)
-                resizable.add(i);
-            outSize += value.length();
+    fun process(md: MetadataInfo): String {
+        if (entityList == null) parse()
+        val chunks = ArrayList<String>()
+        val resizable = ArrayList<Int>()
+        var outSize = 0
+        for (i in entityList!!.indices) {
+            val e = entityList!![i]
+            val value = e[md]
+            chunks.add(value)
+            if (e.shrinkable() && value.length > 0) resizable.add(i)
+            outSize += value.length
         }
-        if (outSize > length && resizable.size() > 0) {
-            int shirinkableSize = 0;
-            for (Integer i : resizable) {
-                shirinkableSize += chunks.get(i).length();
+        if (outSize > length && resizable.size > 0) {
+            var shirinkableSize = 0
+            for (i in resizable) {
+                shirinkableSize += chunks[i].length
             }
-            float shrinkCoef[] = new float[chunks.size()];
-            for (Integer i : resizable) {
-                shrinkCoef[i] = ((float) chunks.get(i).length()) / shirinkableSize;
+            val shrinkCoef = FloatArray(chunks.size)
+            for (i in resizable) {
+                shrinkCoef[i] = chunks[i].length.toFloat() / shirinkableSize
             }
-            for (Integer i : resizable) {
-                String v = chunks.get(i);
-                int reduceBy = Math.round(shrinkCoef[i] * (outSize - length));
-                int endIndex = v.length() - reduceBy;
-                if (endIndex > 0)
-                    chunks.set(i, v.substring(0, endIndex));
-                else
-                    chunks.set(i, "");
+            for (i in resizable) {
+                val v = chunks[i]
+                val reduceBy = Math.round(shrinkCoef[i] * (outSize - length))
+                val endIndex = v.length - reduceBy
+                if (endIndex > 0) chunks[i] = v.substring(0, endIndex) else chunks[i] = ""
             }
         }
-        StringBuilder result = new StringBuilder();
-        for (String chunk : chunks) {
-            result.append(chunk);
+        val result = StringBuilder()
+        for (chunk in chunks) {
+            result.append(chunk)
         }
-        return result.toString();
+        return result.toString()
     }
-
 }

@@ -1,24 +1,18 @@
-package app.pdfx;
+package app.pdfx
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-@Retention(RetentionPolicy.RUNTIME)
-
-public @interface MdStruct {
-    String name() default "";
-
-    enum StructType {
+@Retention(AnnotationRetention.RUNTIME)
+annotation class MdStruct(
+    val name: String = "",
+    val type: StructType = StructType.MD_STRUCT,
+    val access: Access = Access.READ_WRITE
+) {
+    enum class StructType {
         MD_STRUCT,
-        MD_ENABLE_STRUCT,
+        MD_ENABLE_STRUCT
     }
 
-    StructType type() default StructType.MD_STRUCT;
-
-    enum Access {
+    enum class Access {
         READ_ONLY,
-        READ_WRITE,
+        READ_WRITE
     }
-
-    Access access() default Access.READ_WRITE;
 }

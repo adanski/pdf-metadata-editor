@@ -1,26 +1,23 @@
-package app.pdfx;
+package app.pdfx
 
-import java.util.Calendar;
-import java.util.Iterator;
-import java.util.List;
+import app.pdfx.DateFormat.formatDateTime
+import java.util.*
 
-public class ListFormat {
-
-
-    public static String humanReadable(List<Object> list) {
-        StringBuilder sb = new StringBuilder();
-        Iterator<Object> it = list.iterator();
+object ListFormat {
+    fun humanReadable(list: List<Any>): String {
+        val sb = StringBuilder()
+        val it = list.iterator()
         while (it.hasNext()) {
-            Object v = it.next();
-            if (Calendar.class.isAssignableFrom(v.getClass())) {
-                sb.append(DateFormat.formatDateTime((Calendar) v));
+            val v = it.next()
+            if (Calendar::class.java.isAssignableFrom(v.javaClass)) {
+                sb.append(formatDateTime((v as Calendar)))
             } else {
-                sb.append(v.toString());
+                sb.append(v.toString())
             }
             if (it.hasNext()) {
-                sb.append(", ");
+                sb.append(", ")
             }
         }
-        return sb.toString();
+        return sb.toString()
     }
 }
