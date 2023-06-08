@@ -1,12 +1,13 @@
 package app.pdfx
 
-import app.pdfx.FieldEnabled.value
-import app.pdfx.FieldID.value
+import app.pdfx.annotations.FieldEnabled
+import app.pdfx.annotations.FieldId
 import com.toedter.calendar.JDateChooser
 import java.awt.EventQueue
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
+import java.time.Instant
 import java.util.*
 import javax.swing.*
 import javax.swing.text.AttributeSet
@@ -16,7 +17,7 @@ import javax.swing.text.PlainDocument
 
 class MetadataEditPane {
     interface FieldSetGet {
-        fun apply(field: Any?, anno: FieldID)
+        fun apply(field: Any?, anno: FieldId)
     }
 
     interface FieldEnabledCheckBox {
@@ -25,130 +26,130 @@ class MetadataEditPane {
 
     var basicMetaPanel: JPanel? = null
 
-    @FieldID("doc.title")
+    @FieldId("doc.title")
     var basicTitle: JTextField? = null
 
-    @FieldID("doc.author")
+    @FieldId("doc.author")
     var basicAuthor: JTextField? = null
 
-    @FieldID("doc.subject")
+    @FieldId("doc.subject")
     var basicSubject: JTextArea? = null
 
-    @FieldID(value = "doc.keywords")
+    @FieldId(value = "doc.keywords")
     var basicKeywords: JTextArea? = null
 
-    @FieldID("doc.creator")
+    @FieldId("doc.creator")
     var basicCreator: JTextField? = null
 
-    @FieldID("doc.producer")
+    @FieldId("doc.producer")
     var basicProducer: JTextField? = null
 
-    @FieldID("doc.trapped")
-    var basicTrapped: JComboBox<*>? = null
+    @FieldId("doc.trapped")
+    var basicTrapped: JComboBox<String>? = null
 
-    @FieldID(value = "doc.creationDate", type = FieldID.FieldType.DATE)
+    @FieldId(value = "doc.creationDate", type = FieldId.FieldType.DATE)
     var basicCreationDate: JDateChooser? = null
 
-    @FieldID(value = "doc.modificationDate", type = FieldID.FieldType.DATE)
+    @FieldId(value = "doc.modificationDate", type = FieldId.FieldType.DATE)
     var basicModificationDate: JDateChooser? = null
 
-    @FieldID("basic.creatorTool")
+    @FieldId("basic.creatorTool")
     var xmpBasicCreatorTool: JTextField? = null
 
-    @FieldID("basic.baseURL")
+    @FieldId("basic.baseURL")
     var xmpBasicBaseURL: JTextField? = null
 
-    @FieldID("basic.rating")
+    @FieldId("basic.rating")
     var xmpBasicRating: JTextField? = null
 
-    @FieldID("basic.label")
+    @FieldId("basic.label")
     var xmpBasicLabel: JTextField? = null
 
-    @FieldID("basic.nickname")
+    @FieldId("basic.nickname")
     var xmpBasicNickname: JTextField? = null
 
-    @FieldID(value = "basic.identifiers", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "basic.identifiers", type = FieldId.FieldType.TEXT)
     var xmpBasicIdentifiers: JTextArea? = null
 
-    @FieldID(value = "basic.advisories", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "basic.advisories", type = FieldId.FieldType.TEXT)
     var xmpBasicAdvisories: JTextArea? = null
 
-    @FieldID(value = "basic.modifyDate", type = FieldID.FieldType.DATE)
+    @FieldId(value = "basic.modifyDate", type = FieldId.FieldType.DATE)
     var xmpBasicModifyDate: JDateChooser? = null
 
-    @FieldID(value = "basic.createDate", type = FieldID.FieldType.DATE)
+    @FieldId(value = "basic.createDate", type = FieldId.FieldType.DATE)
     var xmpBasicCreateDate: JDateChooser? = null
 
-    @FieldID(value = "basic.metadataDate", type = FieldID.FieldType.DATE)
+    @FieldId(value = "basic.metadataDate", type = FieldId.FieldType.DATE)
     var xmpBasicMetadataDate: JDateChooser? = null
 
-    @FieldID("pdf.keywords")
+    @FieldId("pdf.keywords")
     var xmpPdfKeywords: JTextArea? = null
 
-    @FieldID("pdf.pdfVersion")
+    @FieldId("pdf.pdfVersion")
     var xmpPdfVersion: JTextField? = null
 
-    @FieldID("pdf.producer")
+    @FieldId("pdf.producer")
     var xmpPdfProducer: JTextField? = null
 
-    @FieldID("dc.title")
+    @FieldId("dc.title")
     var xmpDcTitle: JTextField? = null
 
-    @FieldID("dc.coverage")
+    @FieldId("dc.coverage")
     var xmpDcCoverage: JTextField? = null
 
-    @FieldID("dc.description")
+    @FieldId("dc.description")
     var xmpDcDescription: JTextField? = null
 
-    @FieldID(value = "dc.dates", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.dates", type = FieldId.FieldType.TEXT)
     var xmpDcDates: JTextArea? = null
 
-    @FieldID("dc.format")
+    @FieldId("dc.format")
     var xmpDcFormat: JTextField? = null
 
-    @FieldID("dc.identifier")
+    @FieldId("dc.identifier")
     var xmpDcIdentifier: JTextField? = null
 
-    @FieldID("dc.rights")
+    @FieldId("dc.rights")
     var xmpDcRights: JTextField? = null
 
-    @FieldID("dc.source")
+    @FieldId("dc.source")
     var xmpDcSource: JTextField? = null
 
-    @FieldID(value = "dc.creators", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.creators", type = FieldId.FieldType.TEXT)
     var xmpDcCreators: JTextArea? = null
 
-    @FieldID(value = "dc.contributors", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.contributors", type = FieldId.FieldType.TEXT)
     var xmpDcContributors: JTextArea? = null
 
-    @FieldID(value = "dc.languages", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.languages", type = FieldId.FieldType.TEXT)
     var xmpDcLanguages: JTextArea? = null
 
-    @FieldID(value = "dc.publishers", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.publishers", type = FieldId.FieldType.TEXT)
     var xmpDcPublishers: JTextArea? = null
 
-    @FieldID(value = "dc.relationships", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.relationships", type = FieldId.FieldType.TEXT)
     var xmpDcRelationships: JTextArea? = null
 
-    @FieldID(value = "dc.subjects", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.subjects", type = FieldId.FieldType.TEXT)
     var xmpDcSubjects: JTextArea? = null
 
-    @FieldID(value = "dc.types", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "dc.types", type = FieldId.FieldType.TEXT)
     var xmpDcTypes: JTextArea? = null
 
-    @FieldID("rights.certificate")
+    @FieldId("rights.certificate")
     var xmpRightsCertificate: JTextField? = null
 
-    @FieldID(value = "rights.marked", type = FieldID.FieldType.BOOL)
-    var xmpRightsMarked: JComboBox<*>? = null
+    @FieldId(value = "rights.marked", type = FieldId.FieldType.BOOL)
+    var xmpRightsMarked: JComboBox<String>? = null
 
-    @FieldID(value = "rights.owner", type = FieldID.FieldType.TEXT)
+    @FieldId(value = "rights.owner", type = FieldId.FieldType.TEXT)
     var xmpRightsOwner: JTextArea? = null
 
-    @FieldID("rights.usageTerms")
+    @FieldId("rights.usageTerms")
     var xmpRightsUsageTerms: JTextArea? = null
 
-    @FieldID("rights.webStatement")
+    @FieldId("rights.webStatement")
     var xmpRightsWebStatement: JTextField? = null
     var xmlBasicMetaPanel: JPanel? = null
     var xmlPdfMetaPanel: JPanel? = null
@@ -524,8 +525,8 @@ class MetadataEditPane {
         gbc_basicTrappedEnabled.gridx = 1
         gbc_basicTrappedEnabled.gridy = 8
         basicMetaPanel!!.add(basicTrappedEnabled, gbc_basicTrappedEnabled)
-        basicTrapped = JComboBox<Any?>()
-        basicTrapped.setModel(DefaultComboBoxModel<Any?>(arrayOf<String?>("True", "False", "Unknown")))
+        basicTrapped = JComboBox<String>()
+        basicTrapped!!.setModel(DefaultComboBoxModel(arrayOf("True", "False", "Unknown")))
         val gbc_basicTrapped = GridBagConstraints()
         gbc_basicTrapped.anchor = GridBagConstraints.WEST
         gbc_basicTrapped.gridx = 2
@@ -1296,8 +1297,8 @@ class MetadataEditPane {
         gbc_xmpRightsMarkedEnabled.gridx = 1
         gbc_xmpRightsMarkedEnabled.gridy = 1
         xmpRightsMetaPanel!!.add(xmpRightsMarkedEnabled, gbc_xmpRightsMarkedEnabled)
-        xmpRightsMarked = JComboBox<Any?>()
-        xmpRightsMarked.setModel(DefaultComboBoxModel<Any?>(arrayOf<String?>("Unset", "Yes", "No")))
+        xmpRightsMarked = JComboBox<String>()
+        xmpRightsMarked!!.setModel(DefaultComboBoxModel(arrayOf("Unset", "Yes", "No")))
         val gbc_xmpRightsMarked = GridBagConstraints()
         gbc_xmpRightsMarked.anchor = GridBagConstraints.WEST
         gbc_xmpRightsMarked.fill = GridBagConstraints.HORIZONTAL
@@ -1409,7 +1410,7 @@ class MetadataEditPane {
     private fun traverseFields(setGet: FieldSetGet?, fieldEnabled: FieldEnabledCheckBox?) {
         for (field in this.javaClass.fields) {
             if (setGet != null) {
-                val annos = field.getAnnotation(FieldID::class.java)
+                val annos = field.getAnnotation(FieldId::class.java)
                 if (annos != null) {
                     if (annos.value != null && annos.value.length > 0) {
                         var f: Any? = null
@@ -1459,7 +1460,7 @@ class MetadataEditPane {
 
     fun disableEdit() {
         traverseFields(object : FieldSetGet {
-            override fun apply(field: Any?, anno: FieldID) {
+            override fun apply(field: Any?, anno: FieldId) {
                 if (field is JComponent) {
                     field.isEnabled = false
                 }
@@ -1469,7 +1470,7 @@ class MetadataEditPane {
 
     fun clear() {
         traverseFields(object : FieldSetGet {
-            override fun apply(field: Any?, anno: FieldID) {
+            override fun apply(field: Any?, anno: FieldId) {
                 if (field is JTextField) {
                     field.text = null
                 }
@@ -1477,7 +1478,7 @@ class MetadataEditPane {
                     field.text = null
                 }
                 if (field is JComboBox<*>) {
-                    objectToField(field, null, anno.type === FieldID.FieldType.BOOL)
+                    objectToField(field, null, anno.type === FieldId.FieldType.BOOL)
                 }
                 if (field is JDateChooser) {
                     objectToField(field, null)
@@ -1495,7 +1496,7 @@ class MetadataEditPane {
 
     fun fillFromMetadata(metadataInfo: MetadataInfo) {
         traverseFields(object : FieldSetGet {
-            override fun apply(field: Any?, anno: FieldID) {
+            override fun apply(field: Any?, anno: FieldId) {
                 if (field is JTextField) {
                     field.text = metadataInfo.getString(anno.value)
                 }
@@ -1504,7 +1505,7 @@ class MetadataEditPane {
                 }
                 val value = metadataInfo[anno.value]
                 if (field is JComboBox<*>) {
-                    objectToField(field, value, anno.type === FieldID.FieldType.BOOL)
+                    objectToField(field, value, anno.type === FieldId.FieldType.BOOL)
                 }
                 if (field is JDateChooser) {
                     objectToField(field, value)
@@ -1522,7 +1523,7 @@ class MetadataEditPane {
 
     fun copyToMetadata(metadataInfo: MetadataInfo) {
         traverseFields(object : FieldSetGet {
-            override fun apply(field: Any?, anno: FieldID) {
+            override fun apply(field: Any?, anno: FieldId) {
                 if (field is JTextField || field is JTextArea) {
                     var text = if (field is JTextField) field.text else (field as JTextArea).text
                     if (text!!.length == 0) {
@@ -1532,7 +1533,7 @@ class MetadataEditPane {
                 }
                 if (field is JSpinner) {
                     when (anno.type) {
-                        FieldID.FieldType.INT -> {
+                        FieldId.FieldType.INT -> {
                             val i = field.model.value as Int
                             metadataInfo[anno.value] = i
                         }
@@ -1546,15 +1547,15 @@ class MetadataEditPane {
                         text = null
                     }
                     when (anno.type) {
-                        FieldID.FieldType.STRING -> metadataInfo[anno.value] = text
-                        FieldID.FieldType.BOOL -> metadataInfo.setFromString(anno.value, text)
+                        FieldId.FieldType.STRING -> metadataInfo[anno.value] = text
+                        FieldId.FieldType.BOOL -> metadataInfo.setFromString(anno.value, text)
                         else -> throw RuntimeException("Cannot (store (choice text) in :" + anno.type)
                     }
                 }
                 if (field is JDateChooser) {
                     when (anno.type) {
-                        FieldID.FieldType.DATE -> metadataInfo[anno.value] = field.calendar
-                        else -> throw RuntimeException("Cannot store Calendar in :" + anno.type)
+                        FieldId.FieldType.DATE -> metadataInfo[anno.value] = field.calendar?.toInstant()
+                        else -> throw RuntimeException("Cannot store Date in :" + anno.type)
                     }
                 }
             }
@@ -1584,8 +1585,8 @@ class MetadataEditPane {
     }
 
     private fun objectToField(field: JDateChooser, o: Any?) {
-        if (o is Calendar) {
-            field.calendar = o
+        if (o is Instant) {
+            field.calendar = o.toCalendar()
         } else if (o == null) {
             field.calendar = null
         } else {
@@ -1608,7 +1609,6 @@ class MetadataEditPane {
     }
 
     companion object {
-        private const val serialVersionUID = 6994489903939856136L
         @JvmStatic
         fun main(args: Array<String>) {
             EventQueue.invokeLater {

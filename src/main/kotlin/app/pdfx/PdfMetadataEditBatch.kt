@@ -5,10 +5,10 @@ import java.io.*
 import java.nio.file.Files
 import java.util.*
 
-class PDFMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationParameters? = null) {
+class PdfMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationParameters? = null) {
     interface ActionStatus {
-        fun addStatus(filename: String?, message: String?)
-        fun addError(filename: String?, error: String?)
+        fun addStatus(filename: String, message: String)
+        fun addError(filename: String, error: String)
     }
 
     interface FileAction {
@@ -63,7 +63,6 @@ class PDFMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationP
                     md.saveAsPDF(file)
                     status.addStatus(file.name, "Done")
                 } catch (e: Exception) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace()
                     status.addError(file.name, "Failed: $e")
                 }
@@ -83,7 +82,6 @@ class PDFMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationP
                     md.saveAsPDF(file)
                     status.addStatus(file.name, "Cleared")
                 } catch (e: Exception) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace()
                     status.addError(file.name, "Failed: $e")
                 }
@@ -196,12 +194,12 @@ class PDFMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationP
         })
     }
 
-    fun fromcsv(csvFiles: List<File>, status: ActionStatus) {
+    private fun fromCsv(csvFiles: List<File>, status: ActionStatus) {
         for (csvFile in csvFiles) {
             try {
                 val actionList = readFile(csvFile)
                 for (mdParams in actionList) {
-                    val file = File(mdParams.file!!.fullPath)
+                    val file = File(mdParams.file.fullPath)
                     try {
                         val mdFile = MetadataInfo()
                         mdFile.loadFromPDF(file)
@@ -210,7 +208,6 @@ class PDFMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationP
                         md.saveAsPDF(file)
                         status.addStatus(file.name, "Done")
                     } catch (e: Exception) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace()
                         status.addError(file.name, "Failed: $e")
                     }
@@ -233,7 +230,7 @@ class PDFMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationP
         } else if (command.`is`("toyaml")) {
             toyaml(batchFileList, actionStatus)
         } else if (command.`is`("fromcsv")) {
-            fromcsv(batchFileList, actionStatus)
+            fromCsv(batchFileList, actionStatus)
         } else {
             actionStatus.addError("*", "Invalid command")
         }

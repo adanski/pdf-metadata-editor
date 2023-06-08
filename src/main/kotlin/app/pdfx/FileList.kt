@@ -34,7 +34,7 @@ object FileList {
     }
 
     fun fileList(fileNames: Array<String?>): List<File> {
-        return fileList(Arrays.asList(*fileNames))
+        return fileList(listOf(*fileNames))
     }
 
     internal class Finder(pattern: String) : SimpleFileVisitor<Path>() {

@@ -1,6 +1,7 @@
 package app.pdfx
 
 import app.pdfx.DateFormat.formatDateTime
+import java.time.Instant
 import java.util.*
 
 object ListFormat {
@@ -9,8 +10,8 @@ object ListFormat {
         val it = list.iterator()
         while (it.hasNext()) {
             val v = it.next()
-            if (Calendar::class.java.isAssignableFrom(v.javaClass)) {
-                sb.append(formatDateTime((v as Calendar)))
+            if (Instant::class.java.isAssignableFrom(v.javaClass)) {
+                sb.append(formatDateTime((v as Instant)))
             } else {
                 sb.append(v.toString())
             }

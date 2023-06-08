@@ -2,10 +2,10 @@ package app.pdfx
 
 import org.junit.jupiter.api.Test
 
-class TestPrismNamespace {
+class PrismNamespaceTest {
+
     @Test
-    @Throws(Exception::class)
-    fun testPrism() {
+    fun `test prism`() {
         val xmp =
             "<?xpacket begin=\"ï»¿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03        \">\r\n" +
                     "   <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\r\n" +
@@ -83,6 +83,6 @@ class TestPrismNamespace {
                     "   </rdf:RDF>\r\n" +
                     "</x:xmpmeta><?xpacket end=\"w\"?>\r\n" +
                     ""
-        val metadata = XmpParserProvider.get().parse(xmp.toByteArray())
+        val metadata = XmpParserProvider.get().parse(xmp.byteInputStream())
     }
 }

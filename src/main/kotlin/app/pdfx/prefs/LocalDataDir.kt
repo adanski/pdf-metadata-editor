@@ -8,31 +8,24 @@ import java.nio.file.Path
  * Responsible for determining the directory to write application data, across
  * multiple platforms. See also:
  *
+ * - [Linux: XDG Base Directory Specification]
+ * (https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
  *
- *  *
- * [
- * Linux: XDG Base Directory Specification
-](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) *
+ * - [Windows: Recognized environment variables]
+ * (https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables)
  *
- *  *
- * [
- * Windows: Recognized environment variables
-](https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables) *
- *
- *  *
- * [
- * MacOS: File System Programming Guide
-](https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html) *
- *
- *
+ * - [MacOS: File System Programming Guide]
+ * (https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html)
  *
  */
 object LocalDataDir {
+
     private val UNDEFINED = Path.of("/")
     private val PROP_USER_HOME = System.getProperty("user.home")
     private val PROP_OS_VERSION = System.getProperty("os.version")
     private val ENV_APPDATA = System.getenv("AppData")
     private val ENV_XDG_DATA_HOME = System.getenv("XDG_DATA_HOME")
+
     @Throws(FileNotFoundException::class)
     fun getAppPath(appName: String): Path {
         val osPath = if (isWindows) winAppPath else if (isMacOs) macAppPath else if (isUnix) unixAppPath else UNDEFINED
@@ -46,24 +39,24 @@ object LocalDataDir {
     }
 
     private val winAppPath: Path
-        private get() = if (ENV_APPDATA == null || ENV_APPDATA.isBlank()) home(*winVerAppPath) else Path.of(ENV_APPDATA)
+        get() = if (ENV_APPDATA == null || ENV_APPDATA.isBlank()) home(*winVerAppPath) else Path.of(ENV_APPDATA)
     private val winVerAppPath: Array<String>
         /**
          * Gets the application path with respect to the Windows version.
          *
          * @return The directory name paths relative to the user's home directory.
          */
-        private get() = if (PROP_OS_VERSION.startsWith("5.")) arrayOf("Application Data") else arrayOf(
+        get() = if (PROP_OS_VERSION.startsWith("5.")) arrayOf("Application Data") else arrayOf(
             "AppData",
             "Roaming"
         )
     private val macAppPath: Path
-        private get() {
+        get() {
             val path = home("Library", "Application Support")
             return if (ensureExists(path)) path else UNDEFINED
         }
     private val unixAppPath: Path
-        private get() {
+        get() {
             // Fallback in case the XDG data directory is undefined.
             var path = home(".local", "share")
             if (ENV_XDG_DATA_HOME != null && !ENV_XDG_DATA_HOME.isBlank()) {
@@ -100,9 +93,9 @@ object LocalDataDir {
     }
 
     private val isWindows: Boolean
-        private get() = SystemUtils.IS_OS_WINDOWS
+        get() = SystemUtils.IS_OS_WINDOWS
     private val isMacOs: Boolean
-        private get() = SystemUtils.IS_OS_MAC
+        get() = SystemUtils.IS_OS_MAC
     private val isUnix: Boolean
-        private get() = SystemUtils.IS_OS_UNIX
+        get() = SystemUtils.IS_OS_UNIX
 }

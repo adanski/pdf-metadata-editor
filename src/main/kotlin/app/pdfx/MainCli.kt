@@ -5,7 +5,7 @@ import app.pdfx.CommandLine.Companion.mdFieldsHelpMessage
 import app.pdfx.CommandLine.Companion.parse
 import app.pdfx.CommandLine.ParseError
 import app.pdfx.FileList.fileList
-import app.pdfx.PDFMetadataEditBatch.ActionStatus
+import app.pdfx.PdfMetadataEditBatch.ActionStatus
 
 object MainCli {
     fun executeCommand(cmdLine: CommandLine) {
@@ -27,8 +27,8 @@ object MainCli {
             }
         }
         if (cmdLine.hasCommand()) {
-            val batch = PDFMetadataEditBatch(cmdLine.params)
-            batch.runCommand(cmdLine.command, fileList(cmdLine.fileList), status)
+            val batch = PdfMetadataEditBatch(cmdLine.params)
+            batch.runCommand(cmdLine.command!!, fileList(cmdLine.fileList), status)
             return
         } else if (cmdLine.batchGui) {
             status.addError("*", "Batch gui command not allowed in console mode")

@@ -1,17 +1,17 @@
 package app.pdfx.prefs
 
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.io.FileNotFoundException
 
 class LocalDataDirTest {
+
     @Test
-    @Throws(FileNotFoundException::class)
-    fun test_Unix_GetAppDirectory_DirectoryExists() {
+    fun `should get app data directory`() {
         val path = LocalDataDir.getAppPath("test")
         val file = path.toFile()
-        Assertions.assertTrue(file.exists())
-        Assertions.assertTrue(file.delete())
-        Assertions.assertFalse(file.exists())
+        assertTrue(file.exists())
+        assertTrue(file.delete())
+        assertFalse(file.exists())
     }
 }

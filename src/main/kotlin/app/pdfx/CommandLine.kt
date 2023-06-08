@@ -3,7 +3,7 @@ package app.pdfx
 import java.util.*
 
 class CommandLine {
-    class ParseError(string: String?) : Exception(string)
+    class ParseError(message: String) : Exception(message)
 
     @JvmField
     var fileList: MutableList<String> = ArrayList()
@@ -60,12 +60,11 @@ class CommandLine {
     }
 
     companion object {
-        @JvmStatic
+
         fun mdFieldsHelpMessage(lineLen: Int, markReadOnly: Boolean): String {
             return mdFieldsHelpMessage(lineLen, "  ", "", markReadOnly)
         }
 
-        @JvmStatic
         fun mdFieldsHelpMessage(lineLen: Int, pre: String, post: String, markReadOnly: Boolean): String {
             var maxLen = 0
             for (s in validMdNames) {
@@ -96,10 +95,9 @@ class CommandLine {
             return sb.toString()
         }
 
-        @JvmField
         var validMdNames: Set<String> = LinkedHashSet(MetadataInfo.keys())
-        @Throws(ParseError::class)
-        protected fun processOptions(startIndex: Int, args: List<String>, cmdLine: CommandLine): Int {
+
+        private fun processOptions(startIndex: Int, args: List<String>, cmdLine: CommandLine): Int {
             var i = startIndex
             while (i < args.size && args[i].startsWith("-")) {
                 val arg = if (args[i].startsWith("--")) args[i].substring(2) else args[i].substring(1)
@@ -122,13 +120,11 @@ class CommandLine {
             return i
         }
 
-        @JvmStatic
-        @Throws(ParseError::class)
-        fun parse(args: Array<String?>): CommandLine {
-            return parse(Arrays.asList(*args))
+
+        fun parse(args: Array<String>): CommandLine {
+            return parse(listOf(*args))
         }
 
-        @Throws(ParseError::class)
         fun parse(args: List<String>): CommandLine {
             val cmdLine = CommandLine()
             cmdLine.params.metadata.setEnabled(false)

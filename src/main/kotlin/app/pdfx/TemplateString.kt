@@ -28,24 +28,24 @@ class TemplateString @JvmOverloads constructor(var template: String?, var length
 
     var entityList: MutableList<Entity>? = null
     fun parse() {
-        entityList = ArrayList()
+        entityList = mutableListOf()
         if (template == null) return
         var idx = 0
         while (true) {
             val openIdx = template!!.indexOf("{", idx)
-            if (openIdx > 0) entityList.add(Literal(template!!.substring(idx, openIdx)))
+            if (openIdx > 0) entityList!!.add(Literal(template!!.substring(idx, openIdx)))
             idx = if (openIdx >= 0) {
                 val closeIdx = template!!.indexOf("}", openIdx)
                 if (closeIdx >= 0) {
                     val varName = template!!.substring(openIdx + 1, closeIdx)
-                    entityList.add(Variable(varName))
+                    entityList!!.add(Variable(varName))
                     closeIdx + 1
                 } else {
-                    entityList.add(Literal(template!!.substring(openIdx)))
+                    entityList!!.add(Literal(template!!.substring(openIdx)))
                     break
                 }
             } else {
-                entityList.add(Literal(template!!.substring(idx)))
+                entityList!!.add(Literal(template!!.substring(idx)))
                 break
             }
         }

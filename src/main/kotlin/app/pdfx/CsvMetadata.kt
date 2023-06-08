@@ -8,9 +8,8 @@ import java.io.FileReader
 import java.util.*
 
 object CsvMetadata {
-    @JvmStatic
-    @Throws(Exception::class)
-    fun readFile(filename: File?): List<MetadataInfo> {
+
+    fun readFile(filename: File): List<MetadataInfo> {
         val parsed = ArrayList<MetadataInfo>()
         val reader = CSVReaderBuilder(FileReader(filename))
             .withCSVParser(
@@ -25,7 +24,7 @@ object CsvMetadata {
         for (i in header.indices) {
             header[i] = header[i].trim { it <= ' ' }
         }
-        if (!Arrays.asList(*header).contains("file.fullPath")) {
+        if (!header.contains("file.fullPath")) {
             throw Exception("The header must specify a 'file.fullPath' column")
         }
         for (row in entries) {

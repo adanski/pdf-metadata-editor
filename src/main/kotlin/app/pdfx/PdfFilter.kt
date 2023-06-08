@@ -11,9 +11,7 @@ class PdfFilter : FileFilter() {
         val fn = f.name
         val ext = fn.substring(fn.lastIndexOf('.') + 1)
         //System.out.println(ext);
-        return if (ext.equals("pdf", ignoreCase = true)) {
-            true
-        } else false
+        return ext.equals("pdf", ignoreCase = true)
     }
 
     override fun getDescription(): String {

@@ -13,17 +13,16 @@ import java.util.*
 import javax.swing.*
 import javax.swing.plaf.basic.BasicArrowButton
 
-class PDFMetadataEditWindow(filePath: String?) : JFrame() {
+class PdfMetadataEditWindow(filePath: String?) : JFrame() {
     val fc: JFileChooser
-    var currentFile: File? = null
-        private set
-    private var metadataInfo: MetadataInfo? = MetadataInfo()
+    lateinit var currentFile: File
+    private var metadataInfo: MetadataInfo = MetadataInfo()
     private val defaultMetadata: MetadataInfo
-    private var filename: JTextField? = null
+    private lateinit var filename: JTextField
     private var preferencesWindow: PreferencesWindow? = null
     private fun clear() {
-        filename!!.text = ""
-        metadataEditor!!.clear()
+        filename.text = ""
+        metadataEditor.clear()
     }
 
     fun loadFile(fileName: String?) {
@@ -34,11 +33,11 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
     fun reloadFile() {
         clear()
         try {
-            filename!!.text = currentFile!!.absolutePath
+            filename.text = currentFile.absolutePath
             metadataInfo = MetadataInfo()
-            metadataInfo!!.loadFromPDF(currentFile!!)
-            metadataInfo!!.copyUnsetExpanded(defaultMetadata, metadataInfo)
-            metadataEditor!!.fillFromMetadata(metadataInfo!!)
+            metadataInfo.loadFromPDF(currentFile)
+            metadataInfo.copyUnsetExpanded(defaultMetadata)
+            metadataEditor.fillFromMetadata(metadataInfo)
         } catch (e: Exception) {
             e.printStackTrace()
             JOptionPane.showMessageDialog(
@@ -50,10 +49,10 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
 
     private fun saveFile(newFile: File?) {
         try {
-            metadataEditor!!.copyToMetadata(metadataInfo!!)
-            metadataInfo!!.copyUnsetExpanded(defaultMetadata, metadataInfo)
-            metadataInfo!!.saveAsPDF(currentFile!!, newFile)
-            metadataEditor!!.fillFromMetadata(metadataInfo!!)
+            metadataEditor.copyToMetadata(metadataInfo)
+            metadataInfo.copyUnsetExpanded(defaultMetadata)
+            metadataInfo.saveAsPDF(currentFile, newFile)
+            metadataEditor.fillFromMetadata(metadataInfo)
         } catch (e: Exception) {
             e.printStackTrace()
             JOptionPane.showMessageDialog(
@@ -63,22 +62,22 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         }
     }
 
-    private var metadataEditor: MetadataEditPane? = null
+    private lateinit var metadataEditor: MetadataEditPane
     val saveAction = ActionListener { e: ActionEvent? -> saveFile(null) }
     val saveRenameAction: ActionListener = object : ActionListener {
         override fun actionPerformed(e: ActionEvent) {
             saveFile(null)
-            val renameTemplate = preferences!!["renameTemplate", null] ?: return
+            val renameTemplate = preferences["renameTemplate", null] ?: return
             val ts = TemplateString(renameTemplate)
             val toName = ts.process(metadataInfo)
-            val toDir = currentFile!!.parent
+            val toDir = currentFile.parent
             val to = File(toDir, toName)
             try {
-                Files.move(currentFile!!.toPath(), to.toPath())
+                Files.move(currentFile.toPath(), to.toPath())
                 currentFile = to
             } catch (e1: IOException) {
                 JOptionPane.showMessageDialog(
-                    this@PDFMetadataEditWindow,
+                    this@PdfMetadataEditWindow,
                     "Error while renaming file:\n$e1"
                 )
             }
@@ -88,14 +87,11 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
     val saveAsAction: ActionListener = object : ActionListener {
         override fun actionPerformed(e: ActionEvent) {
             val fcSaveAs = JFileChooser()
-            val dir = preferences!!["LastDir", null]
+            val dir = preferences["LastDir", null]
             if (dir != null) {
-                try {
-                    fcSaveAs.currentDirectory = File(dir)
-                } catch (e1: Exception) {
-                }
+                fcSaveAs.currentDirectory = File(dir)
             }
-            val returnVal = fcSaveAs.showSaveDialog(this@PDFMetadataEditWindow)
+            val returnVal = fcSaveAs.showSaveDialog(this@PdfMetadataEditWindow)
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 var selected = fcSaveAs.selectedFile
                 if (!selected.name.lowercase(Locale.getDefault()).endsWith(".pdf")) {
@@ -106,28 +102,27 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
                 reloadFile()
 
                 // save dir as last opened
-                preferences!!.put("LastDir", currentFile!!.parent)
+                preferences.put("LastDir", currentFile.parent)
             }
         }
     }
     val updateSaveButton = Runnable {
-        val saveActionS = preferences!!["defaultSaveAction", "save"]
-        for (l in btnSave!!.actionListeners) {
-            btnSave!!.removeActionListener(l)
+        val saveActionS = preferences["defaultSaveAction", "save"]
+        for (l in btnSave.actionListeners) {
+            btnSave.removeActionListener(l)
         }
         if (saveActionS == "saveRename") {
-            btnSave!!.text = "Save & rename"
-            btnSave!!.addActionListener(saveRenameAction)
+            btnSave.text = "Save & rename"
+            btnSave.addActionListener(saveRenameAction)
         } else if (saveActionS == "saveAs") {
-            btnSave!!.text = "Save As ..."
-            btnSave!!.addActionListener(saveAsAction)
+            btnSave.text = "Save As ..."
+            btnSave.addActionListener(saveAsAction)
         } else {
-            btnSave!!.text = "Save"
-            btnSave!!.addActionListener(saveAction)
+            btnSave.text = "Save"
+            btnSave.addActionListener(saveAction)
         }
     }
-    protected var btnSave: JButton? = null
-        private set
+    private lateinit var btnSave: JButton
 
     /**
      * Create the application.
@@ -152,13 +147,13 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
             }
         }
         FileDrop(this, object : FileDrop.Listener {
-            override fun filesDropped(files: Array<File?>?, where: Point?) {
+            override fun filesDropped(files: Array<File>, where: Point) {
                 val fdm = glassPane as FileDropSelectMessage
                 glassPane.isVisible = false
                 repaint()
                 val fileNames: MutableList<String> = ArrayList()
-                for (file in files!!) {
-                    fileNames.add(file!!.absolutePath)
+                for (file in files) {
+                    fileNames.add(file.absolutePath)
                 }
                 executeCommand(CommandLine(fileNames, fdm.isBatchOperation))
             }
@@ -172,7 +167,7 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
                 repaint()
             }
 
-            override fun dragOver(where: Point?) {
+            override fun dragOver(where: Point) {
                 (glassPane as FileDropSelectMessage).setDropPos(where)
                 repaint()
             }
@@ -202,20 +197,17 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         gbc_btnOpenPdf.gridy = 0
         panel.add(btnOpenPdf, gbc_btnOpenPdf)
         btnOpenPdf.addActionListener { event: ActionEvent? ->
-            val dir = preferences!!["LastDir", null]
+            val dir = preferences["LastDir", null]
             if (dir != null) {
-                try {
-                    fc.currentDirectory = File(dir)
-                } catch (e: Exception) {
-                }
+                fc.currentDirectory = File(dir)
             }
-            val returnVal = fc.showOpenDialog(this@PDFMetadataEditWindow)
+            val returnVal = fc.showOpenDialog(this@PdfMetadataEditWindow)
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 currentFile = fc.selectedFile
                 // This is where a real application would open the file.
                 reloadFile()
                 // save dir as last opened
-                preferences!!.put("LastDir", currentFile.getParent())
+                preferences.put("LastDir", currentFile.parent)
             }
         }
         filename = JTextField()
@@ -225,8 +217,8 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         gbc_filename.gridx = 1
         gbc_filename.gridy = 0
         panel.add(filename, gbc_filename)
-        filename!!.isEditable = false
-        filename!!.columns = 10
+        filename.isEditable = false
+        filename.columns = 10
         val horizontalStrut = Box.createHorizontalStrut(20)
         val gbc_horizontalStrut = GridBagConstraints()
         gbc_horizontalStrut.anchor = GridBagConstraints.WEST
@@ -234,7 +226,7 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         gbc_horizontalStrut.gridx = 2
         gbc_horizontalStrut.gridy = 0
         panel.add(horizontalStrut, gbc_horizontalStrut)
-        val prefImgURL = PDFMetadataEditWindow::class.java
+        val prefImgURL = PdfMetadataEditWindow::class.java
             .getResource("settings-icon.png")
         val img = ImageIcon(prefImgURL)
         val btnPreferences = JButton("")
@@ -247,15 +239,15 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         btnPreferences.addActionListener { e: ActionEvent? ->
             SwingUtilities.invokeLater {
                 if (preferencesWindow == null) {
-                    preferencesWindow = PreferencesWindow(preferences, defaultMetadata, this@PDFMetadataEditWindow)
+                    preferencesWindow = PreferencesWindow(preferences, defaultMetadata, this@PdfMetadataEditWindow)
                     preferencesWindow!!.onSaveAction(updateSaveButton)
                 }
                 preferencesWindow!!.isVisible = true
             }
         }
         metadataEditor = MetadataEditPane()
-        contentPane.add(metadataEditor!!.tabbedaPane, "cell 0 1,grow")
-        metadataEditor!!.showEnabled(false)
+        contentPane.add(metadataEditor.tabbedaPane, "cell 0 1,grow")
+        metadataEditor.showEnabled(false)
 
 
 //		metadataEditor = createMetadataEditor();
@@ -272,9 +264,9 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         val btnCopyXmpTo = JButton("Copy XMP To Document")
         btnCopyXmpTo.addActionListener { e: ActionEvent? ->
             if (metadataInfo != null) {
-                metadataEditor!!.copyToMetadata(metadataInfo!!)
-                metadataInfo!!.copyXMPToDoc()
-                metadataEditor!!.fillFromMetadata(metadataInfo!!)
+                metadataEditor.copyToMetadata(metadataInfo)
+                metadataInfo.copyXMPToDoc()
+                metadataEditor.fillFromMetadata(metadataInfo)
             }
         }
         val gbc_btnCopyXmpTo = GridBagConstraints()
@@ -287,9 +279,9 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         val btnCopyDocumentTo = JButton("Copy Document To XMP")
         btnCopyDocumentTo.addActionListener { e: ActionEvent? ->
             if (metadataInfo != null) {
-                metadataEditor!!.copyToMetadata(metadataInfo!!)
-                metadataInfo!!.copyDocToXMP()
-                metadataEditor!!.fillFromMetadata(metadataInfo!!)
+                metadataEditor.copyToMetadata(metadataInfo)
+                metadataInfo.copyDocToXMP()
+                metadataEditor.fillFromMetadata(metadataInfo)
             }
         }
         val panel_1 = JPanel()
@@ -302,8 +294,8 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         panel_1.layout = MigLayout("", "[grow,fill]0[]", "[grow,fill]")
         btnSave = JButton("Save")
         panel_1.add(btnSave, "cell 0 0,alignx left,aligny top, gapright 0")
-        btnSave!!.icon = ImageIcon(
-            PDFMetadataEditWindow::class.java
+        btnSave.icon = ImageIcon(
+            PdfMetadataEditWindow::class.java
                 .getResource("save-icon.png")
         )
         val btnSaveMenu = BasicArrowButton(BasicArrowButton.SOUTH)
@@ -331,7 +323,7 @@ class PDFMetadataEditWindow(filePath: String?) : JFrame() {
         gbc_btnCopyDocumentTo.gridy = 1
         panel_4.add(btnCopyDocumentTo, gbc_btnCopyDocumentTo)
         updateSaveButton.run()
-        val imgURL = PDFMetadataEditWindow::class.java
+        val imgURL = PdfMetadataEditWindow::class.java
             .getResource("pdf-metadata-edit.png")
         val icoImg = ImageIcon(imgURL)
         iconImage = icoImg.image

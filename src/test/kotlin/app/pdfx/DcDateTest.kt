@@ -7,8 +7,9 @@ import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.common.PDMetadata
 import org.apache.xmpbox.XMPMetadata
 import org.apache.xmpbox.xml.XmpSerializer
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.util.*
@@ -17,13 +18,14 @@ import java.util.*
  * @author zaro
  * Test for some bugs in pdfbox 2.0.X
  */
-class TestDcDates {
+class DcDateTest {
+
     @Test
-    @Throws(Exception::class)
-    fun test() {
+    fun `test`() {
         val temp = Files.createTempFile("test-file", ".pdf").toFile()
         temp.deleteOnExit()
         val cal = Calendar.getInstance()
+
         PDDocument().use { doc ->
             // a valid PDF document requires at least one page
             val blankPage = PDPage()
@@ -42,19 +44,25 @@ class TestDcDates {
         }
 
         // Read the DC dates field
-        var catalog: PDDocumentCatalog
-        Loader.loadPDF(temp).use { document -> catalog = document.documentCatalog }
-        val meta = catalog.metadata
-        val metadata = XmpParserProvider.get().parse(meta.createInputStream())
-        val dcS = metadata.dublinCoreSchema
-        val actual = dcS.dates
-        Assertions.assertEquals(1, actual.size)
-        Assertions.assertEquals(cal.timeInMillis / 1000, actual[0].timeInMillis / 1000)
+        val actual: List<Calendar> = try {
+            Loader.loadPDF(temp).use { document ->
+                val catalog: PDDocumentCatalog = document.documentCatalog
+                val meta = catalog.metadata
+                val metadata = XmpParserProvider.get().parse(meta.createInputStream())
+                val dcS = metadata.dublinCoreSchema
+                dcS.dates
+            }
+        } catch (e: Exception) {
+            fail(e)
+        }
+
+
+        assertEquals(1, actual.size)
+        assertEquals(cal.timeInMillis / 1000, actual[0].timeInMillis / 1000)
     }
 
     @Test
-    @Throws(Exception::class)
-    fun testDateFormat() {
+    fun `test date format`() {
         val xmp = """<?xpacket begin="ï»¿" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="3.1-701">
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -86,6 +94,6 @@ xmlns:dc="http://purl.org/dc/elements/1.1/">
 </rdf:RDF>
 </x:xmpmeta>
 <?xpacket end="w"?>"""
-        val metadata = XmpParserProvider.get().parse(xmp.toByteArray())
+        val metadata = XmpParserProvider.get().parse(xmp.byteInputStream())
     }
 }

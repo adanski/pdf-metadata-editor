@@ -12,12 +12,8 @@ import javax.swing.text.JTextComponent
 
 class BatchParametersRename(parameters: BatchOperationParameters?, owner: Frame?) :
     BatchParametersWindow(parameters, owner) {
-    protected var previewLabel: JLabel? = null
-        private set
+    private var previewLabel: JLabel? = null
 
-    /**
-     * @wbp.parser.constructor
-     */
     constructor(params: BatchOperationParameters?) : this(params, null)
 
     override fun createContentPane() {
@@ -46,10 +42,10 @@ class BatchParametersRename(parameters: BatchOperationParameters?, owner: Frame?
         gbl_panel.columnWeights = doubleArrayOf(1.0, Double.MIN_VALUE)
         gbl_panel.rowWeights = doubleArrayOf(0.0, 0.0, 0.0, Double.MIN_VALUE)
         panel.layout = gbl_panel
-        val comboBox: JComboBox<*> = JComboBox<Any?>()
+        val comboBox: JComboBox<String> = JComboBox()
         comboBox.setModel(
-            DefaultComboBoxModel<Any?>(
-                arrayOf<String?>(
+            DefaultComboBoxModel(
+                arrayOf(
                     "", "{doc.author} - {doc.title}.pdf",
                     "{doc.author} - {doc.creationDate}.pdf"
                 )
@@ -122,6 +118,6 @@ class BatchParametersRename(parameters: BatchOperationParameters?, owner: Frame?
     fun showPreview(template: String?) {
         parameters.renameTemplate = template
         val ts = TemplateString(template)
-        previewLabel!!.text = "Preview: " + ts.process(MetadataInfo.getSampleMetadata())
+        previewLabel!!.text = "Preview: " + ts.process(DEMO_METADATA)
     }
 }

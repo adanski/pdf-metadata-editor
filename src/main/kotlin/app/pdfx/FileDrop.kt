@@ -70,7 +70,7 @@ class FileDrop(
     out: PrintStream?,
     c: Component,
     recursive: Boolean,
-    listener: Listener?
+    listener: Listener
 ) {
     @Transient
     private val normalBorder: Border? = null
@@ -88,7 +88,7 @@ class FileDrop(
      * @param listener Listens for <tt>filesDropped</tt>.
      * @since 1.0
      */
-    constructor(c: Component, listener: Listener?) : this(
+    constructor(c: Component, listener: Listener) : this(
         null,  // Logging stream
         c,  // Drop target
         true,  // Recursive
@@ -117,7 +117,7 @@ class FileDrop(
 
                     // Is this an acceptable drag event?
                     if (isDragOk(out, evt)) {
-                        listener?.dragEnter()
+                        listener.dragEnter()
 
                         // Acknowledge that it's okay to enter
                         //evt.acceptDrag( java.awt.dnd.DnDConstants.ACTION_COPY_OR_MOVE );
@@ -139,7 +139,7 @@ class FileDrop(
                 }
 
                 override fun dragOver(evt: DropTargetDragEvent) {
-                    listener!!.dragOver(getEventPoint(evt))
+                    listener.dragOver(getEventPoint(evt))
                 } // end dragOver
 
                 override fun drop(evt: DropTargetDropEvent) {
@@ -155,15 +155,14 @@ class FileDrop(
                             log(out, "FileDrop: file list accepted.")
 
                             // Get a useful list
-                            val fileList = tr.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
+                            val fileList = tr.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
                             val iterator = fileList.iterator()
 
                             // Convert list to array
-                            val filesTemp = arrayOfNulls<File>(fileList.size)
-                            fileList.toArray(filesTemp)
+                            val files: Array<File> = fileList.toTypedArray()
 
                             // Alert listener to drop.
-                            listener?.filesDropped(filesTemp, getEventPoint(evt))
+                            listener.filesDropped(files, getEventPoint(evt))
 
                             // Mark that drop is completed.
                             evt.dropTargetContext.dropComplete(true)
@@ -183,7 +182,7 @@ class FileDrop(
                                     log(out, "FileDrop: reader accepted.")
                                     val reader = flavors[zz].getReaderForText(tr)
                                     val br = BufferedReader(reader)
-                                    listener?.filesDropped(createFileArray(br, out), getEventPoint(evt))
+                                    listener.filesDropped(createFileArray(br, out), getEventPoint(evt))
 
                                     // Mark that drop is completed.
                                     evt.dropTargetContext.dropComplete(true)
@@ -220,7 +219,7 @@ class FileDrop(
 
                 override fun dragExit(evt: DropTargetEvent) {
                     log(out, "FileDrop: dragExit event.")
-                    listener?.dragLeave()
+                    listener.dragLeave()
                 } // end dragExit
 
                 override fun dropActionChanged(evt: DropTargetDragEvent) {
@@ -341,10 +340,10 @@ class FileDrop(
          * @param files An array of <tt>File</tt>s that were dropped.
          * @since 1.0
          */
-        fun filesDropped(files: Array<File?>?, where: Point?)
+        fun filesDropped(files: Array<File>, where: Point)
         fun dragEnter()
         fun dragLeave()
-        fun dragOver(where: Point?)
+        fun dragOver(where: Point)
     } // end inner-interface Listener
     /* ********  I N N E R   C L A S S  ******** */
     /**
@@ -620,9 +619,9 @@ class FileDrop(
 
         // BEGIN 2007-09-12 Nathan Blomquist -- Linux (KDE/Gnome) support added.
         private const val ZERO_CHAR_STRING = "" + 0.toChar()
-        private fun createFileArray(bReader: BufferedReader, out: PrintStream?): Array<File?> {
+        private fun createFileArray(bReader: BufferedReader, out: PrintStream?): Array<File> {
             try {
-                val list: MutableList<*> = ArrayList<Any?>()
+                val list: MutableList<File> = mutableListOf()
                 var line: String? = null
                 while (bReader.readLine().also { line = it } != null) {
                     try {
@@ -634,11 +633,11 @@ class FileDrop(
                         log(out, "Error with " + line + ": " + ex.message)
                     }
                 }
-                return list.toTypedArray() as Array<File?>
+                return list.toTypedArray()
             } catch (ex: IOException) {
                 log(out, "FileDrop: IOException")
             }
-            return arrayOfNulls(0)
+            return arrayOf()
         }
 
         /**

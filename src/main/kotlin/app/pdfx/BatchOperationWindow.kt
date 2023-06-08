@@ -1,7 +1,7 @@
 package app.pdfx
 
 import app.pdfx.BatchOperationParameters.Companion.loadForCommand
-import app.pdfx.PDFMetadataEditBatch.ActionStatus
+import app.pdfx.PdfMetadataEditBatch.ActionStatus
 import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
@@ -13,9 +13,10 @@ import java.util.*
 import java.util.concurrent.ExecutionException
 import javax.swing.*
 import javax.swing.event.HyperlinkEvent
-import javax.swing.event.HyperlinkListener
 import javax.swing.text.BadLocationException
 import javax.swing.text.StyleConstants
+
+private const val LAST_USED_COMMAND_KEY = "lastUsedBatchCommand"
 
 class BatchOperationWindow(command: CommandDescription?) : JFrame() {
     private val statusText: JTextPane
@@ -39,7 +40,6 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
     var batchFileList: MutableList<File> = ArrayList()
     var hasErrors = false
     private val btnParameters: JButton
-    private var txtpnnoBatchLicense: JTextPane?
 
     init {
         title = "Batch PDF metadata edit"
@@ -100,11 +100,11 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         statusScrollPane.setViewportView(statusText)
         statusText.isEditable = false
         val estyle = statusText.addStyle("ERROR", null)
-        txtpnnoBatchLicense = JTextPane()
-        txtpnnoBatchLicense.setEditable(false)
-        txtpnnoBatchLicense.setBackground(UIManager.getColor("Panel.background"))
-        txtpnnoBatchLicense.setContentType("text/html")
-        txtpnnoBatchLicense.setText("<p align=center>No batch license. In order to use batch operations please get a license from <a href='" + Constants.batchLicenseUrl + "'>" + Constants.batchLicenseUrl + "<a></p>")
+        val txtpnnoBatchLicense: JTextPane = JTextPane()
+        txtpnnoBatchLicense.isEditable = false
+        txtpnnoBatchLicense.background = UIManager.getColor("Panel.background")
+        txtpnnoBatchLicense.contentType = "text/html"
+        txtpnnoBatchLicense.text = "<p align=center>No batch license. In order to use batch operations please get a license from <a href='" + Constants.batchLicenseUrl + "'>" + Constants.batchLicenseUrl + "<a></p>"
         val gbc_txtpnnoBatchLicense = GridBagConstraints()
         gbc_txtpnnoBatchLicense.fill = GridBagConstraints.BOTH
         gbc_txtpnnoBatchLicense.insets = Insets(0, 10, 5, 10)
@@ -112,7 +112,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         gbc_txtpnnoBatchLicense.gridx = 0
         gbc_txtpnnoBatchLicense.gridy = 4
         contentPane.add(txtpnnoBatchLicense, gbc_txtpnnoBatchLicense)
-        txtpnnoBatchLicense.addHyperlinkListener(HyperlinkListener { e: HyperlinkEvent ->
+        txtpnnoBatchLicense.addHyperlinkListener { e: HyperlinkEvent ->
             if (e.eventType != HyperlinkEvent.EventType.ACTIVATED) {
                 return@addHyperlinkListener
             }
@@ -123,12 +123,9 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
             if (!desktop.isSupported(Desktop.Action.BROWSE)) {
                 return@addHyperlinkListener
             }
-            try {
-                val uri = e.url.toURI()
-                desktop.browse(uri)
-            } catch (e1: Exception) {
-            }
-        })
+            val uri = e.url.toURI()
+            desktop.browse(uri)
+        }
         val panel = JPanel()
         val gbc_panel = GridBagConstraints()
         gbc_panel.anchor = GridBagConstraints.WEST
@@ -157,7 +154,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
             selectedBatchOperation.setModel(DefaultComboBoxModel(arrayOf(command)))
         } else {
             selectedBatchOperation.setModel(DefaultComboBoxModel(CommandDescription.batchCommands))
-            val lastUsedCommand = Main.getPreferences()[LAST_USED_COMMAND_KEY, null]
+            val lastUsedCommand = Main.preferences[LAST_USED_COMMAND_KEY, null]
             if (lastUsedCommand != null) {
                 val lastCommand = CommandDescription.getBatchCommand(lastUsedCommand)
                 if (lastCommand != null) {
@@ -171,7 +168,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
             override fun filesDropped(files: Array<File>, where: Point) {
                 glassPane.isVisible = false
                 repaint()
-                appendFiles(Arrays.asList(*files))
+                appendFiles(listOf(*files))
             }
 
             override fun dragEnter() {
@@ -190,8 +187,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         gridBagLayout.rowHeights[4] = 0
         contentPane.remove(txtpnnoBatchLicense)
         gridBagLayout.removeLayoutComponent(txtpnnoBatchLicense)
-        txtpnnoBatchLicense = null
-        val imgURL = PDFMetadataEditWindow::class.java
+        val imgURL = PdfMetadataEditWindow::class.java
             .getResource("pdf-metadata-edit.png")
         val icoImg = ImageIcon(imgURL)
         iconImage = icoImg.image
@@ -237,10 +233,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         SwingUtilities.invokeLater {
             if (batchFileList.isEmpty() && files.size > 0) {
                 val doc = fileList.document
-                try {
-                    doc.remove(0, doc.length)
-                } catch (e: BadLocationException) {
-                }
+                doc.remove(0, doc.length)
             }
             for (file in files) {
                 try {
@@ -256,7 +249,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
 
     fun runBatch() {
         val command = selectedBatchOperation.selectedItem as CommandDescription
-        Main.getPreferences().put(LAST_USED_COMMAND_KEY, command.name)
+        Main.preferences.put(LAST_USED_COMMAND_KEY, command.name)
         object : Worker() {
             var actionStatus: ActionStatus = object : ActionStatus {
                 override fun addStatus(filename: String, message: String) {
@@ -268,13 +261,11 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
                 }
             }
 
-            @Throws(Exception::class)
-            override fun doInBackground(): Void {
+            override fun doInBackground(): Unit {
                 val params = getBatchParameters(command)
                 params.storeForCommand(command)
-                val batch = PDFMetadataEditBatch(params)
+                val batch = PdfMetadataEditBatch(params)
                 batch.runCommand(command, batchFileList, actionStatus)
-                return null
             }
 
             override fun done() {
@@ -307,8 +298,8 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         }
     }
 
-    internal class FileOpResult(var filename: String, var message: String, var error: Boolean)
-    internal abstract inner class Worker : SwingWorker<Void?, FileOpResult>() {
+    private class FileOpResult(var filename: String, var message: String, var error: Boolean)
+    private abstract inner class Worker : SwingWorker<Unit, FileOpResult>() {
         override fun process(chunks: List<FileOpResult>) {
             for (chunk in chunks) {
                 if (chunk.error) {
@@ -320,7 +311,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         }
     }
 
-    protected fun getBatchParameters(command: CommandDescription): BatchOperationParameters {
+    private fun getBatchParameters(command: CommandDescription): BatchOperationParameters {
         var params = batchParameters[command.name]
         if (params == null) {
             params = loadForCommand(command)
@@ -329,7 +320,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         return params
     }
 
-    fun createBatchParametersWindow() {
+    private fun createBatchParametersWindow() {
         val command = selectedBatchOperation.selectedItem as CommandDescription
         if (parametersWindow != null) {
             parametersWindow!!.isVisible = false
@@ -361,12 +352,10 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         }
     }
 
-    companion object {
-        const val LAST_USED_COMMAND_KEY = "lastUsedBatchCommand"
-        fun clearActionListeners(btn: AbstractButton) {
-            for (al in btn.actionListeners) {
-                btn.removeActionListener(al)
-            }
-        }
+}
+
+private fun clearActionListeners(btn: AbstractButton) {
+    for (al in btn.actionListeners) {
+        btn.removeActionListener(al)
     }
 }

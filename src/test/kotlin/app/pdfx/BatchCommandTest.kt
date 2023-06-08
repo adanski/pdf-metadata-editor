@@ -1,13 +1,15 @@
 package app.pdfx
 
-import app.pdfx.PDFMetadataEditBatch.ActionStatus
-import org.junit.jupiter.api.Assertions
+import app.pdfx.PdfMetadataEditBatch.ActionStatus
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
+private const val NUM_FILES = 5
+
 class BatchCommandTest {
+
     @Test
-    @Throws(Exception::class)
-    fun testClearAll() {
+    fun `test clear all`() {
         val fileList = MetadataInfoTest.randomFiles(NUM_FILES)
         val args: MutableList<String> = ArrayList()
         args.add("clear")
@@ -16,12 +18,12 @@ class BatchCommandTest {
             args.add(t.file.absolutePath)
         }
         val c = CommandLine.parse(args)
-        val batch = PDFMetadataEditBatch(c.params)
-        batch.runCommand(c.command, FileList.fileList(c.fileList), object : ActionStatus {
+        val batch = PdfMetadataEditBatch(c.params)
+        batch.runCommand(c.command!!, FileList.fileList(c.fileList), object : ActionStatus {
             override fun addStatus(filename: String, message: String) {}
             override fun addError(filename: String, error: String) {
                 println(error)
-                Assertions.fail<Any>(error)
+                fail<Any>(error)
             }
         })
         val empty = MetadataInfo()
@@ -29,13 +31,12 @@ class BatchCommandTest {
             val loaded = MetadataInfo()
             loaded.loadFromPDF(t.file)
             //System.out.println(pdf.getAbsolutePath());
-            Assertions.assertTrue(empty.isEquivalent(loaded))
+            assertTrue(empty.isEquivalent(loaded))
         }
     }
 
     @Test
-    @Throws(Exception::class)
-    fun testClearNone() {
+    fun `test clear none`() {
         val fileList = MetadataInfoTest.randomFiles(NUM_FILES)
         val args: MutableList<String> = ArrayList()
         args.add("clear")
@@ -44,12 +45,12 @@ class BatchCommandTest {
             args.add(t.file.absolutePath)
         }
         val c = CommandLine.parse(args)
-        val batch = PDFMetadataEditBatch(c.params)
-        batch.runCommand(c.command, FileList.fileList(c.fileList), object : ActionStatus {
+        val batch = PdfMetadataEditBatch(c.params)
+        batch.runCommand(c.command!!, FileList.fileList(c.fileList), object : ActionStatus {
             override fun addStatus(filename: String, message: String) {}
             override fun addError(filename: String, error: String) {
                 println(error)
-                Assertions.fail<Any>(error)
+                fail<Any>(error)
             }
         })
         val empty = MetadataInfo()
@@ -57,13 +58,12 @@ class BatchCommandTest {
             val loaded = MetadataInfo()
             loaded.loadFromPDF(t.file)
             //System.out.println(pdf.getAbsolutePath());
-            Assertions.assertTrue(t.md.isEquivalent(loaded))
+            assertTrue(t.md.isEquivalent(loaded))
         }
     }
 
     @Test
-    @Throws(Exception::class)
-    fun testFromCSV() {
+    fun `test from CSV`() {
         val fileList = MetadataInfoTest.randomFiles(NUM_FILES)
         val csvLines: MutableList<String> = ArrayList()
         csvLines.add("file.fullPath,doc.author,dc.title")
@@ -75,12 +75,12 @@ class BatchCommandTest {
         args.add("fromcsv")
         args.add(csvFile.absolutePath)
         val c = CommandLine.parse(args)
-        val batch = PDFMetadataEditBatch(c.params)
-        batch.runCommand(c.command, FileList.fileList(c.fileList), object : ActionStatus {
+        val batch = PdfMetadataEditBatch(c.params)
+        batch.runCommand(c.command!!, FileList.fileList(c.fileList), object : ActionStatus {
             override fun addStatus(filename: String, message: String) {}
             override fun addError(filename: String, error: String) {
                 println(error)
-                Assertions.fail<Any>(error)
+                fail<Any>(error)
             }
         })
         val empty = MetadataInfo()
@@ -89,12 +89,9 @@ class BatchCommandTest {
             loaded.loadFromPDF(t.file)
             //System.out.println(pdf.getAbsolutePath());
             //assertTrue(t.md.isEquivalent(loaded));
-            Assertions.assertEquals(loaded.doc.author, "AUTHOR-AUTHOR")
-            Assertions.assertEquals(loaded.dc.title, "TITLE,TITLE")
+            assertEquals(loaded.doc.author, "AUTHOR-AUTHOR")
+            assertEquals(loaded.dc.title, "TITLE,TITLE")
         }
     }
 
-    companion object {
-        const val NUM_FILES = 5
-    }
 }

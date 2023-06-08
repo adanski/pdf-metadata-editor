@@ -8,11 +8,11 @@ import javax.swing.JComponent
 import javax.swing.JDialog
 import javax.swing.KeyStroke
 
-abstract class BatchParametersWindow @JvmOverloads constructor(
+abstract class BatchParametersWindow(
     parameters: BatchOperationParameters?,
     owner: Frame? = null
 ) : JDialog(owner, true) {
-    var parameters: BatchOperationParameters? = null
+    var parameters: BatchOperationParameters
     var onClose: Runnable? = null
 
     /**

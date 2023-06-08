@@ -2,14 +2,10 @@ package app.pdfx
 
 import app.pdfx.CommandLine.Companion.mdFieldsHelpMessage
 import app.pdfx.Main.preferences
-import app.pdfx.MetadataInfo.Companion.sampleMetadata
-import app.pdfx.PreferencesWindow
 import app.pdfx.Version.VersionTuple
 import net.miginfocom.swing.MigLayout
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Request.Builder.build
-import okhttp3.Request.Builder.url
 import okhttp3.Response
 import org.apache.commons.lang3.function.Failable
 import java.awt.*
@@ -46,7 +42,7 @@ class PreferencesWindow @JvmOverloads constructor(
     protected var isWindows: Boolean
     private fun checkForUpdates(): CompletableFuture<Response> {
         val httpClient = OkHttpClient()
-        val request: Request = Builder()
+        val request: Request = Request.Builder()
             .url("http://broken-by.me/download/pdf-metadata-editor/")
             .build()
         return CompletableFuture.supplyAsync(Failable.asSupplier { httpClient.newCall(request).execute() })
@@ -78,10 +74,10 @@ class PreferencesWindow @JvmOverloads constructor(
                     break
                 }
             }
-            if (current.cmp(latest) < 0) {
+            if (current.cmp(latest!!) < 0) {
                 versionMsg =
                     ("<h3 align=center>New version available: <a href='http://broken-by.me/pdf-metadata-editor/#download'>"
-                            + latest!!.asString + "</a> , current: " + current.asString + "</h3>")
+                            + latest.asString + "</a> , current: " + current.asString + "</h3>")
                 updateStatusLabel.text = "Newer version available:" + latest.asString
             } else {
                 versionMsg = "<h3 align=center>Version " + current.asString + " is the latest version</h3>"
@@ -129,7 +125,7 @@ class PreferencesWindow @JvmOverloads constructor(
     fun showPreview(template: String?) {
         renameTemplate = template
         val ts = TemplateString(template)
-        previewLabel.text = "Preview:" + ts.process(sampleMetadata)
+        previewLabel.text = "Preview:" + ts.process(DEMO_METADATA)
     }
 
     fun onSaveAction(newAction: Runnable?) {
@@ -206,6 +202,7 @@ class PreferencesWindow @JvmOverloads constructor(
         )
         panel_1.layout = MigLayout("", "[]", "[][]")
         onsaveCopyDocumentTo = JCheckBox("Copy Document To XMP")
+        onsaveCopyXmpTo = JCheckBox("Copy XMP To Document")
         onsaveCopyDocumentTo.addActionListener { e: ActionEvent? ->
             if (onsaveCopyDocumentTo.isSelected) {
                 onsaveCopyXmpTo.isSelected = false
@@ -215,7 +212,7 @@ class PreferencesWindow @JvmOverloads constructor(
         }
         panel_1.add(onsaveCopyDocumentTo, "cell 0 0,alignx left,aligny top")
         onsaveCopyDocumentTo.isSelected = false
-        onsaveCopyXmpTo = JCheckBox("Copy XMP To Document")
+
         onsaveCopyXmpTo.addActionListener { e: ActionEvent? ->
             if (onsaveCopyXmpTo.isSelected) {
                 onsaveCopyDocumentTo.isSelected = false
@@ -357,11 +354,9 @@ class PreferencesWindow @JvmOverloads constructor(
             if (!desktop.isSupported(Desktop.Action.BROWSE)) {
                 return@addHyperlinkListener
             }
-            try {
-                val uri = e.url.toURI()
-                desktop.browse(uri)
-            } catch (e1: Exception) {
-            }
+            val uri = e.url.toURI()
+            desktop.browse(uri)
+
         }
         val lblNewLabel_2 = JLabel("Email")
         val gbc_lblNewLabel_2 = GridBagConstraints()
@@ -438,11 +433,8 @@ class PreferencesWindow @JvmOverloads constructor(
             if (!desktop.isSupported(Desktop.Action.BROWSE)) {
                 return@addHyperlinkListener
             }
-            try {
-                val uri = e.url.toURI()
-                desktop.browse(uri)
-            } catch (e1: Exception) {
-            }
+            val uri = e.url.toURI()
+            desktop.browse(uri)
         }
         txtpnDf.contentType = "text/html"
         txtpnDf.isEditable = false

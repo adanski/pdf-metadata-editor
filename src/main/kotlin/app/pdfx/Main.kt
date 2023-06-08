@@ -18,7 +18,7 @@ object Main {
     internal var batchGuiCounter = 0
     val batchGuiCommand: String
         get() = "batch-gui-" + batchGuiCounter++
-    var cmdQueue: BlockingQueue<CommandLine?> = LinkedBlockingDeque()
+    var cmdQueue: BlockingQueue<CommandLine> = LinkedBlockingDeque()
 
     // this must be swing worker
     fun makeBatchWindow(commandName: String?, command: CommandDescription?, fileList: List<String?>?) {
@@ -70,7 +70,7 @@ object Main {
                 logLine("executeCommand fileName", fileAbsPath)
                 for (window in editorInstances) {
                     val wFile = window.currentFile
-                    logLine("check ", wFile?.absolutePath)
+                    logLine("check ", wFile.absolutePath)
                     if (fileAbsPath == null && wFile == null || wFile != null && wFile.absolutePath == fileAbsPath) {
                         logLine("match", null)
                         if (window.state == JFrame.ICONIFIED) {
@@ -83,7 +83,7 @@ object Main {
                     }
                 }
                 logLine("open editor", file)
-                val window = PDFMetadataEditWindow(file)
+                val window = PdfMetadataEditWindow(file)
                 window.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
                 window.addWindowListener(object : WindowAdapter() {
                     override fun windowClosing(winEvt: WindowEvent) {
@@ -99,14 +99,9 @@ object Main {
     }
 
     @JvmStatic
-    fun executeCommand(cmdLine: CommandLine?) {
+    fun executeCommand(cmdLine: CommandLine) {
         logLine("executeCommand:", cmdLine.toString())
-        try {
-            cmdQueue.put(cmdLine)
-        } catch (e: InterruptedException) {
-            // TODO Auto-generated catch block
-            e.printStackTrace()
-        }
+        cmdQueue.put(cmdLine)
     }
 
     val debugLog = System.getProperty("debugLog")
@@ -115,21 +110,19 @@ object Main {
             return
         }
         println("$context:: $line")
-        try {
-            val output = PrintWriter(
-                FileWriter(
-                    System.getProperty("java.io.tmpdir") + File.separator + "pdf-metada-editor-log.txt",
-                    true
-                )
+
+        val output = PrintWriter(
+            FileWriter(
+                System.getProperty("java.io.tmpdir") + File.separator + "pdf-metada-editor-log.txt",
+                true
             )
-            output.printf("%s:: %s\r\n", context, line ?: "null")
-            output.close()
-        } catch (e: Exception) {
-        }
+        )
+        output.printf("%s:: %s\r\n", context, line ?: "null")
+        output.close()
     }
 
     var batchInstances: MutableMap<String?, BatchOperationWindow> = HashMap()
-    var editorInstances: MutableList<PDFMetadataEditWindow> = ArrayList()
+    var editorInstances: MutableList<PdfMetadataEditWindow> = ArrayList()
     fun maybeExit() {
         if (batchInstances.size == 0 && editorInstances.size == 0 && cmdQueue.size == 0) {
             System.exit(0)
@@ -142,27 +135,19 @@ object Main {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        var cmdLine: CommandLine? = null
-        try {
-            cmdLine = parse(args)
+        val cmdLine: CommandLine = try {
+            parse(args)
         } catch (e: ParseError) {
             logLine("ParseError", e.toString())
             System.err.println(e)
             return
         }
         //System.out.println(cmdLine);
-        if (cmdLine!!.noGui) {
+        if (cmdLine.noGui) {
             MainCli.main(cmdLine)
             return
         }
-        //	    try {
-//    	UIManager.setLookAndFeel(
-//    			UIManager.getCrossPlatformLookAndFeelClassName());
-//    } 
-//    catch (UnsupportedLookAndFeelException e) {}
-//    catch (ClassNotFoundException e) {}
-//    catch (InstantiationException e) {}
-//    catch (IllegalAccessException e) {}
+
         executeCommand(cmdLine)
         logLine("DDE:", "DONE")
         val commandsExecutor = CommandsExecutor()
@@ -174,7 +159,7 @@ object Main {
             while (numWindows() == 0) {
                 try {
                     commandsExecutor[50, TimeUnit.MILLISECONDS]
-                } catch (e: TimeoutException) {
+                } catch (_: TimeoutException) {
                 }
             }
         } catch (e: InterruptedException) {
@@ -184,29 +169,24 @@ object Main {
         }
     }
 
-    var _prefs: Preferences? = null
+    private var _prefs: Preferences? = null
     @JvmStatic
-    val preferences: Preferences?
+    val preferences: Preferences
         get() {
             if (_prefs == null) {
                 System.setProperty("java.util.prefs.PreferencesFactory", FilePreferencesFactory::class.java.name)
                 _prefs = Preferences.userRoot().node("pdfxMetadataEditor")
             }
-            return _prefs
+            return _prefs!!
         }
 
-    internal class CommandsExecutor : SwingWorker<Void, CommandLine>() {
+    private class CommandsExecutor : SwingWorker<Void, CommandLine>() {
         public override fun doInBackground(): Void {
             while (true) {
-                var cmdLine: CommandLine
-                try {
-                    cmdLine = cmdQueue.take()
-                    logLine("publish", cmdLine.toString())
-                    publish(cmdLine)
-                } catch (e: InterruptedException) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace()
-                }
+                val cmdLine: CommandLine = cmdQueue.take()
+                logLine("publish", cmdLine.toString())
+                publish(cmdLine)
+
             }
         }
 

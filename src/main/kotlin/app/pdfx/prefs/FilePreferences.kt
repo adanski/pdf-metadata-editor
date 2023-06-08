@@ -8,6 +8,8 @@ import java.util.*
 import java.util.prefs.AbstractPreferences
 import java.util.prefs.BackingStoreException
 
+private val log = LoggerFactory.getLogger(FilePreferences::class.java)
+
 /**
  * Preferences implementation that stores to a user-defined file. See FilePreferencesFactory.
  *
@@ -80,7 +82,7 @@ class FilePreferences(parent: AbstractPreferences?, name: String) : AbstractPref
     @Throws(BackingStoreException::class)
     override fun syncSpi() {
         if (isRemoved()) return
-        val file = FilePreferencesFactory.getPreferencesFile()
+        val file = FilePreferencesFactory.preferencesFile!!
         if (!file.exists()) return
         synchronized(file) {
             val p = Properties()
@@ -114,7 +116,7 @@ class FilePreferences(parent: AbstractPreferences?, name: String) : AbstractPref
 
     @Throws(BackingStoreException::class)
     override fun flushSpi() {
-        val file = FilePreferencesFactory.getPreferencesFile()
+        val file = FilePreferencesFactory.preferencesFile!!
         synchronized(file) {
             val p = Properties()
             try {
@@ -157,7 +159,4 @@ class FilePreferences(parent: AbstractPreferences?, name: String) : AbstractPref
         }
     }
 
-    companion object {
-        private val log = LoggerFactory.getLogger(FilePreferences::class.java)
-    }
 }

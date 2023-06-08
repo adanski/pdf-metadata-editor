@@ -1,13 +1,10 @@
 package app.pdfx
 
-import app.pdfx.CommandLine.ParseError
-import app.pdfx.DateFormat.formatDateTime
 import app.pdfx.DateFormat.formatDateTimeFull
-import app.pdfx.DateFormat.parseDate
-import app.pdfx.DateFormat.parseDateOrNull
-import app.pdfx.FieldID.value
-import app.pdfx.ListFormat.humanReadable
-import app.pdfx.MdStruct.StructType
+import app.pdfx.annotations.FieldId
+import app.pdfx.annotations.MdStruct
+import app.pdfx.annotations.MdStruct.StructType
+import app.pdfx.structs.*
 import com.google.gson.GsonBuilder
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.io.MemoryUsageSetting
@@ -22,277 +19,58 @@ import org.yaml.snakeyaml.Yaml
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.lang.reflect.Field
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 import java.util.*
 import java.util.function.Consumer
 import java.util.function.Function
 import javax.xml.transform.TransformerException
+import kotlin.reflect.KClass
+import kotlin.reflect.full.*
+import kotlin.reflect.jvm.javaField
+import kotlin.reflect.jvm.jvmErasure
 
 class MetadataInfo {
-    class FileInfo {
-        var name: String? = null
-        var nameWithExt: String? = null
-        var sizeBytes: Long? = null
-        var size: String? = null
-        var createTime: String? = null
-        var modifyTime: String? = null
-        @JvmField
-        var fullPath: String? = null
-    }
-
-    class FileInfoEnabled {
-        var name = false
-        var nameWithExt = false
-        var sizeBytes = false
-        var size = false
-        var createTime = false
-        var modifyTime = false
-        var fullPath = false
-        fun atLeastOne(): Boolean {
-            return false
-        }
-
-        fun setAll(value: Boolean) {
-            name = false
-            nameWithExt = false
-            sizeBytes = false
-            size = false
-            createTime = false
-            modifyTime = false
-            fullPath = false
-        }
-    }
-
-    class Basic {
-        var title: String? = null
-        var author: String? = null
-        var subject: String? = null
-        var keywords: String? = null
-        var creator: String? = null
-        var producer: String? = null
-        var creationDate: Calendar? = null
-        var modificationDate: Calendar? = null
-        var trapped: String? = null
-    }
-
-    class BasicEnabled {
-        var title = true
-        var author = true
-        var subject = true
-        var keywords = true
-        var creator = true
-        var producer = true
-        var creationDate = true
-        var modificationDate = true
-        var trapped = true
-        fun atLeastOne(): Boolean {
-            return (title || author || subject || keywords || creator || producer || creationDate || modificationDate
-                    || trapped)
-        }
-
-        fun setAll(value: Boolean) {
-            title = value
-            author = value
-            subject = value
-            keywords = value
-            creator = value
-            producer = value
-            creationDate = value
-            modificationDate = value
-            trapped = value
-        }
-    }
-
-    class XmpBasic {
-        var creatorTool: String? = null
-        var createDate: Calendar? = null
-        var modifyDate: Calendar? = null
-        var baseURL: String? = null
-        var rating: Int? = null
-        var label: String? = null
-        var nickname: String? = null
-        var identifiers: List<String>? = null
-        var advisories: List<String>? = null
-        var metadataDate: Calendar? = null
-    }
-
-    class XmpBasicEnabled {
-        var creatorTool = true
-        var createDate = true
-        var modifyDate = true
-        var baseURL = true
-        var rating = true
-        var label = true
-        var nickname = true
-        var identifiers = true
-        var advisories = true
-        var metadataDate = true
-        fun atLeastOne(): Boolean {
-            return (creatorTool || createDate || modifyDate || baseURL || rating || label || nickname
-                    || identifiers || advisories || metadataDate)
-        }
-
-        fun setAll(value: Boolean) {
-            creatorTool = value
-            createDate = value
-            modifyDate = value
-            baseURL = value
-            rating = value
-            label = value
-            nickname = value
-            identifiers = value
-            advisories = value
-            metadataDate = value
-        }
-    }
-
-    class XmpPdf {
-        var pdfVersion: String? = null
-        var keywords: String? = null
-        var producer: String? = null
-    }
-
-    class XmpPdfEnabled {
-        var pdfVersion = true
-        var keywords = true
-        var producer = true
-        fun atLeastOne(): Boolean {
-            return pdfVersion || keywords || producer
-        }
-
-        fun setAll(value: Boolean) {
-            pdfVersion = value
-            keywords = value
-            producer = value
-        }
-    }
-
-    class XmpDublinCore {
-        var title: String? = null
-        var description: String? = null
-        var creators: MutableList<String>? = null
-        var contributors: List<String>? = null
-        var coverage: String? = null
-
-        @FieldID(value = "dates", type = FieldID.FieldType.DATE)
-        var dates: List<Calendar>? = null
-        var format: String? = null
-        var identifier: String? = null
-        var languages: List<String>? = null
-        var publishers: List<String>? = null
-        var relationships: List<String>? = null
-        var rights: String? = null
-        var source: String? = null
-        var subjects: List<String>? = null
-        var types: List<String>? = null
-    }
-
-    class XmpDublinCoreEnabled {
-        var title = true
-        var description = true
-        var creators = true
-        var contributors = true
-        var coverage = true
-        var dates = true
-        var format = true
-        var identifier = true
-        var languages = true
-        var publishers = true
-        var relationships = true
-        var rights = true
-        var source = true
-        var subjects = true
-        var types = true
-        fun atLeastOne(): Boolean {
-            return (title || description || creators || contributors || coverage || dates || format || identifier
-                    || languages || publishers || relationships || rights || source || subjects || types)
-        }
-
-        fun setAll(value: Boolean) {
-            title = value
-            description = value
-            creators = value
-            contributors = value
-            coverage = value
-            dates = value
-            format = value
-            identifier = value
-            languages = value
-            publishers = value
-            relationships = value
-            rights = value
-            source = value
-            subjects = value
-            types = value
-        }
-    }
-
-    class XmpRights {
-        var certificate: String? = null
-        var marked: Boolean? = null
-        var owner: List<String>? = null
-        var usageTerms: String? = null
-        var webStatement: String? = null
-    }
-
-    class XmpRightsEnabled {
-        var certificate = true
-        var marked = true
-        var owner = true
-        var usageTerms = true
-        var webStatement = true
-        fun atLeastOne(): Boolean {
-            return certificate || marked || owner || usageTerms || webStatement
-        }
-
-        fun setAll(value: Boolean) {
-            certificate = value
-            marked = value
-            owner = value
-            usageTerms = value
-            webStatement = value
-        }
-    }
 
     @MdStruct
-    var doc: Basic? = null
+    var doc: Basic
 
     @MdStruct
-    var basic: XmpBasic? = null
+    var basic: XmpBasic
 
     @MdStruct
-    var pdf: XmpPdf? = null
+    var pdf: XmpPdf
 
     @MdStruct
-    var dc: XmpDublinCore? = null
+    var dc: XmpDublinCore
 
     @MdStruct
-    var rights: XmpRights? = null
+    var rights: XmpRights
 
     @JvmField
     @MdStruct(name = "file", type = StructType.MD_STRUCT, access = MdStruct.Access.READ_ONLY)
-    var file: FileInfo? = null
+    var file: FileInfo
 
     @MdStruct(name = "doc", type = StructType.MD_ENABLE_STRUCT)
-    var docEnabled: BasicEnabled? = null
+    var docEnabled: BasicEnabled
 
     @MdStruct(name = "basic", type = StructType.MD_ENABLE_STRUCT)
-    var basicEnabled: XmpBasicEnabled? = null
+    var basicEnabled: XmpBasicEnabled
 
     @MdStruct(name = "pdf", type = StructType.MD_ENABLE_STRUCT)
-    var pdfEnabled: XmpPdfEnabled? = null
+    var pdfEnabled: XmpPdfEnabled
 
     @MdStruct(name = "dc", type = StructType.MD_ENABLE_STRUCT)
-    var dcEnabled: XmpDublinCoreEnabled? = null
+    var dcEnabled: XmpDublinCoreEnabled
 
     @MdStruct(name = "rights", type = StructType.MD_ENABLE_STRUCT)
-    var rightsEnabled: XmpRightsEnabled? = null
+    var rightsEnabled: XmpRightsEnabled
 
     @MdStruct(name = "file", type = StructType.MD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
-    var fileEnabled: FileInfoEnabled? = null
-    fun clear() {
+    var fileEnabled: FileInfoEnabled
+
+    init {
         doc = Basic()
         basic = XmpBasic()
         pdf = XmpPdf()
@@ -308,78 +86,85 @@ class MetadataInfo {
     }
 
     @Throws(IOException::class, XmpParsingException::class, BadFieldValueException::class)
-    protected fun loadFromPDF(document: PDDocument) {
+    private fun loadFromPDF(document: PDDocument) {
         val info = document.documentInformation
 
         // Basic info
-        doc!!.title = info.title
-        doc!!.author = info.author
-        doc!!.subject = info.subject
-        doc!!.keywords = info.keywords
-        doc!!.creator = info.creator
-        doc!!.producer = info.producer
-        doc!!.creationDate = info.creationDate
-        doc!!.modificationDate = info.modificationDate
-        doc!!.trapped = info.trapped
+        doc.apply {
+            title = info.title
+            author = info.author
+            subject = info.subject
+            keywords = info.keywords
+            creator = info.creator
+            producer = info.producer
+            creationDate = info.creationDate?.toInstant()
+            modificationDate = info.modificationDate?.toInstant()
+            trapped = info.trapped
+        }
 
         // Load XMP catalog
         val catalog = document.documentCatalog
         val meta = catalog.metadata
+
         if (meta != null) {
             // Load the metadata
             val metadata = XmpParserProvider.get().parse(meta.createInputStream())
 
             // XMP Basic
-            val bi = metadata.xmpBasicSchema
-            if (bi != null) {
-                basic!!.creatorTool = bi.creatorTool
-                basic!!.createDate = bi.createDate
-                basic!!.modifyDate = bi.modifyDate
-                basic!!.baseURL = bi.baseURL
-                basic!!.rating = bi.rating
-                basic!!.label = bi.label
-                basic!!.nickname = bi.nickname
-                basic!!.identifiers = bi.identifiers
-                basic!!.advisories = bi.advisory
-                basic!!.metadataDate = bi.metadataDate
+            metadata.xmpBasicSchema?.let {
+                basic.apply {
+                    creatorTool = it.creatorTool
+                    createDate = it.createDate?.toInstant()
+                    modifyDate = it.modifyDate?.toInstant()
+                    baseURL = it.baseURL
+                    rating = it.rating
+                    label = it.label
+                    nickname = it.nickname
+                    identifiers = it.identifiers
+                    advisories = it.advisory
+                    metadataDate = it.metadataDate?.toInstant()
+                }
             }
 
             // XMP PDF
-            val pi = metadata.adobePDFSchema
-            if (pi != null) {
-                pdf!!.pdfVersion = pi.pdfVersion
-                pdf!!.keywords = pi.keywords
-                pdf!!.producer = pi.producer
+            metadata.adobePDFSchema?.let {
+                pdf.apply {
+                    pdfVersion = it.pdfVersion
+                    keywords = it.keywords
+                    producer = it.producer
+                }
             }
 
             // XMP Dublin Core
-            val dcS = metadata.dublinCoreSchema
-            if (dcS != null) {
-                dc!!.title = dcS.title
-                dc!!.description = dcS.description
-                dc!!.creators = dcS.creators
-                dc!!.contributors = dcS.contributors
-                dc!!.coverage = dcS.coverage
-                dc!!.dates = dcS.dates
-                dc!!.format = dcS.format
-                dc!!.identifier = dcS.identifier
-                dc!!.languages = dcS.languages
-                dc!!.publishers = dcS.publishers
-                dc!!.relationships = dcS.relations
-                dc!!.rights = dcS.rights
-                dc!!.source = dcS.source
-                dc!!.subjects = dcS.subjects
-                dc!!.types = dcS.types
+            metadata.dublinCoreSchema?.let {
+                dc.apply {
+                    title = it.title
+                    description = it.description
+                    creators = it.creators
+                    contributors = it.contributors
+                    coverage = it.coverage
+                    dates = it.dates.toInstants()
+                    format = it.format
+                    identifier = it.identifier
+                    languages = it.languages
+                    publishers = it.publishers
+                    relationships = it.relations
+                    rights = it.rights
+                    source = it.source
+                    subjects = it.subjects
+                    types = it.types
+                }
             }
 
             // XMP Rights
-            val ri = metadata.xmpRightsManagementSchema
-            if (ri != null) {
-                rights!!.certificate = ri.certificate
-                rights!!.marked = ri.marked
-                rights!!.owner = ri.owners
-                rights!!.usageTerms = ri.usageTerms
-                rights!!.webStatement = ri.webStatement
+            metadata.xmpRightsManagementSchema?.let {
+                rights.apply {
+                    certificate = it.certificate
+                    marked = it.marked
+                    owner = it.owners
+                    usageTerms = it.usageTerms
+                    webStatement = it.webStatement
+                }
             }
         }
 
@@ -390,29 +175,29 @@ class MetadataInfo {
     @Throws(IOException::class, XmpParsingException::class, BadFieldValueException::class)
     fun loadFromPDF(pdfFile: File) {
         loadPDFFileInfo(pdfFile)
-        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30720)).use { document -> loadFromPDF(document) }
+        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720)).use { document -> loadFromPDF(document) }
     }
 
     @Throws(IOException::class)
     fun loadPDFFileInfo(pdfFile: File) {
-        file!!.fullPath = pdfFile.absolutePath
-        file!!.nameWithExt = pdfFile.name
+        file.fullPath = pdfFile.absolutePath
+        file.nameWithExt = pdfFile.name
         val attrs = Files.readAttributes(pdfFile.toPath(), BasicFileAttributes::class.java)
-        file!!.sizeBytes = attrs.size()
-        file!!.createTime = attrs.creationTime().toString()
-        file!!.modifyTime = attrs.lastModifiedTime().toString()
+        file.sizeBytes = attrs.size()
+        file.createTime = attrs.creationTime().toString()
+        file.modifyTime = attrs.lastModifiedTime().toString()
 
         // filename w/o extension
-        if (file!!.nameWithExt != null) {
-            val dotPos = file!!.nameWithExt!!.lastIndexOf('.')
+        if (file.nameWithExt != null) {
+            val dotPos = file.nameWithExt!!.lastIndexOf('.')
             if (dotPos >= 0) {
-                file!!.name = file!!.nameWithExt!!.substring(0, dotPos)
+                file.name = file.nameWithExt!!.substring(0, dotPos)
             } else {
-                file!!.name = file!!.nameWithExt
+                file.name = file.nameWithExt
             }
         }
         // human readable file size
-        var size = file!!.sizeBytes!!.toDouble()
+        var size = file.sizeBytes!!.toDouble()
         var idx: Int
         idx = 0
         while (idx < hrSizes.size) {
@@ -422,45 +207,45 @@ class MetadataInfo {
             size /= 1000.0
             ++idx
         }
-        file!!.size = String.format("%.2f%s", size, hrSizes[idx])
+        file.size = String.format("%.2f%s", size, hrSizes[idx])
     }
 
     @Throws(Exception::class)
-    protected fun saveToPDF(document: PDDocument, pdfFile: File) {
-        if (!(docEnabled!!.atLeastOne() || basicEnabled!!.atLeastOne() || pdfEnabled!!.atLeastOne() || dcEnabled!!.atLeastOne() || rightsEnabled!!.atLeastOne())) {
+    private fun saveToPDF(document: PDDocument, pdfFile: File) {
+        if (!(docEnabled.atLeastOne() || basicEnabled.atLeastOne() || pdfEnabled.atLeastOne() || dcEnabled.atLeastOne() || rightsEnabled.atLeastOne())) {
             return
         }
         //System.err.println("Saving:");
         //System.err.println(toYAML());
         // Basic info
-        if (docEnabled!!.atLeastOne()) {
+        if (docEnabled.atLeastOne()) {
             val info = document.documentInformation
-            if (docEnabled!!.title) {
-                info.title = doc!!.title
+            if (docEnabled.title) {
+                info.title = doc.title
             }
-            if (docEnabled!!.author) {
-                info.author = doc!!.author
+            if (docEnabled.author) {
+                info.author = doc.author
             }
-            if (docEnabled!!.subject) {
-                info.subject = doc!!.subject
+            if (docEnabled.subject) {
+                info.subject = doc.subject
             }
-            if (docEnabled!!.keywords) {
-                info.keywords = doc!!.keywords
+            if (docEnabled.keywords) {
+                info.keywords = doc.keywords
             }
-            if (docEnabled!!.creator) {
-                info.creator = doc!!.creator
+            if (docEnabled.creator) {
+                info.creator = doc.creator
             }
-            if (docEnabled!!.producer) {
-                info.producer = doc!!.producer
+            if (docEnabled.producer) {
+                info.producer = doc.producer
             }
-            if (docEnabled!!.creationDate) {
-                info.creationDate = doc!!.creationDate
+            if (docEnabled.creationDate) {
+                info.creationDate = doc.creationDate.toCalendar()
             }
-            if (docEnabled!!.modificationDate) {
-                info.modificationDate = doc!!.modificationDate
+            if (docEnabled.modificationDate) {
+                info.modificationDate = doc.modificationDate.toCalendar()
             }
-            if (docEnabled!!.trapped) {
-                info.trapped = doc!!.trapped
+            if (docEnabled.trapped) {
+                info.trapped = doc.trapped
             }
             document.documentInformation = info
         }
@@ -476,11 +261,11 @@ class MetadataInfo {
         // XMP Basic
         val biOld = xmpOld?.xmpBasicSchema
         var atLeastOneXmpBasicSet = false
-        if (basicEnabled!!.atLeastOne() || biOld != null) {
+        if (basicEnabled.atLeastOne() || biOld != null) {
             val bi = xmpNew.createAndAddXMPBasicSchema()
-            if (basicEnabled!!.advisories) {
-                if (basic!!.advisories != null) {
-                    for (a in basic!!.advisories!!) {
+            if (basicEnabled.advisories) {
+                if (basic.advisories != null) {
+                    for (a in basic.advisories!!) {
                         bi.addAdvisory(a)
                         atLeastOneXmpBasicSet = true
                     }
@@ -494,9 +279,9 @@ class MetadataInfo {
                     }
                 }
             }
-            if (basicEnabled!!.baseURL) {
-                if (basic!!.baseURL != null) {
-                    bi.baseURL = basic!!.baseURL
+            if (basicEnabled.baseURL) {
+                if (basic.baseURL != null) {
+                    bi.baseURL = basic.baseURL
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -506,9 +291,9 @@ class MetadataInfo {
                     atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled!!.createDate) {
-                if (basic!!.createDate != null) {
-                    bi.createDate = basic!!.createDate
+            if (basicEnabled.createDate) {
+                if (basic.createDate != null) {
+                    bi.createDate = basic.createDate.toCalendar()
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -518,9 +303,9 @@ class MetadataInfo {
                     atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled!!.modifyDate) {
-                if (basic!!.modifyDate != null) {
-                    bi.modifyDate = basic!!.modifyDate
+            if (basicEnabled.modifyDate) {
+                if (basic.modifyDate != null) {
+                    bi.modifyDate = basic.modifyDate.toCalendar()
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -530,9 +315,9 @@ class MetadataInfo {
                     atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled!!.creatorTool) {
-                if (basic!!.creatorTool != null) {
-                    bi.creatorTool = basic!!.creatorTool
+            if (basicEnabled.creatorTool) {
+                if (basic.creatorTool != null) {
+                    bi.creatorTool = basic.creatorTool
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -542,9 +327,9 @@ class MetadataInfo {
                     atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled!!.identifiers) {
-                if (basic!!.identifiers != null) {
-                    for (i in basic!!.identifiers!!) {
+            if (basicEnabled.identifiers) {
+                if (basic.identifiers != null) {
+                    for (i in basic.identifiers!!) {
                         bi.addIdentifier(i)
                         atLeastOneXmpBasicSet = true
                     }
@@ -558,9 +343,9 @@ class MetadataInfo {
                     }
                 }
             }
-            if (basicEnabled!!.label) {
-                if (basic!!.label != null) {
-                    bi.label = basic!!.label
+            if (basicEnabled.label) {
+                if (basic.label != null) {
+                    bi.label = basic.label
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -570,9 +355,9 @@ class MetadataInfo {
                     atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled!!.metadataDate) {
-                if (basic!!.metadataDate != null) {
-                    bi.metadataDate = basic!!.metadataDate
+            if (basicEnabled.metadataDate) {
+                if (basic.metadataDate != null) {
+                    bi.metadataDate = basic.metadataDate.toCalendar()
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -582,9 +367,9 @@ class MetadataInfo {
                     atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled!!.nickname) {
-                if (basic!!.nickname != null) {
-                    bi.nickname = basic!!.nickname
+            if (basicEnabled.nickname) {
+                if (basic.nickname != null) {
+                    bi.nickname = basic.nickname
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -594,9 +379,9 @@ class MetadataInfo {
                     atLeastOneXmpBasicSet = true
                 }
             }
-            if (basicEnabled!!.rating) {
-                if (basic!!.rating != null) {
-                    bi.rating = basic!!.rating
+            if (basicEnabled.rating) {
+                if (basic.rating != null) {
+                    bi.rating = basic.rating
                     atLeastOneXmpBasicSet = true
                 }
             } else if (biOld != null) {
@@ -610,11 +395,11 @@ class MetadataInfo {
         // XMP PDF
         val piOld = xmpOld?.adobePDFSchema
         var atLeastOneXmpPdfSet = false
-        if (pdfEnabled!!.atLeastOne() || piOld != null) {
+        if (pdfEnabled.atLeastOne() || piOld != null) {
             val pi = xmpNew.createAndAddAdobePDFSchema()
-            if (pdfEnabled!!.keywords) {
-                if (pdf!!.keywords != null) {
-                    pi.keywords = pdf!!.keywords
+            if (pdfEnabled.keywords) {
+                if (pdf.keywords != null) {
+                    pi.keywords = pdf.keywords
                     atLeastOneXmpPdfSet = true
                 }
             } else if (piOld != null) {
@@ -624,9 +409,9 @@ class MetadataInfo {
                     atLeastOneXmpPdfSet = true
                 }
             }
-            if (pdfEnabled!!.producer) {
-                if (pdf!!.producer != null) {
-                    pi.producer = pdf!!.producer
+            if (pdfEnabled.producer) {
+                if (pdf.producer != null) {
+                    pi.producer = pdf.producer
                     atLeastOneXmpPdfSet = true
                 }
             } else if (piOld != null) {
@@ -636,9 +421,9 @@ class MetadataInfo {
                     atLeastOneXmpPdfSet = true
                 }
             }
-            if (pdfEnabled!!.pdfVersion) {
-                if (pdf!!.pdfVersion != null) {
-                    pi.pdfVersion = pdf!!.pdfVersion
+            if (pdfEnabled.pdfVersion) {
+                if (pdf.pdfVersion != null) {
+                    pi.pdfVersion = pdf.pdfVersion
                     atLeastOneXmpPdfSet = true
                 }
             } else if (piOld != null) {
@@ -653,11 +438,11 @@ class MetadataInfo {
         // XMP Dublin Core
         val dcOld = xmpOld?.dublinCoreSchema
         var atLeastOneXmpDcSet = false
-        if (dcEnabled!!.atLeastOne() || dcOld != null) {
+        if (dcEnabled.atLeastOne() || dcOld != null) {
             val dcS = xmpNew.createAndAddDublinCoreSchema()
-            if (dcEnabled!!.title) {
-                if (dc!!.title != null) {
-                    dcS.title = dc!!.title
+            if (dcEnabled.title) {
+                if (dc.title != null) {
+                    dcS.title = dc.title
                     atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
@@ -668,9 +453,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.contributors) {
-                if (dc!!.contributors != null) {
-                    for (i in dc!!.contributors!!) {
+            if (dcEnabled.contributors) {
+                if (dc.contributors != null) {
+                    for (i in dc.contributors!!) {
                         dcS.addContributor(i)
                         atLeastOneXmpDcSet = true
                     }
@@ -685,9 +470,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.publishers) {
-                if (dc!!.publishers != null) {
-                    for (i in dc!!.publishers!!) {
+            if (dcEnabled.publishers) {
+                if (dc.publishers != null) {
+                    for (i in dc.publishers!!) {
                         dcS.addPublisher(i)
                         atLeastOneXmpDcSet = true
                     }
@@ -702,9 +487,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.relationships) {
-                if (dc!!.relationships != null) {
-                    for (i in dc!!.relationships!!) {
+            if (dcEnabled.relationships) {
+                if (dc.relationships != null) {
+                    for (i in dc.relationships!!) {
                         dcS.addRelation(i)
                         atLeastOneXmpDcSet = true
                     }
@@ -719,9 +504,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.subjects) {
-                if (dc!!.subjects != null) {
-                    for (i in dc!!.subjects!!) {
+            if (dcEnabled.subjects) {
+                if (dc.subjects != null) {
+                    for (i in dc.subjects!!) {
                         dcS.addSubject(i)
                         atLeastOneXmpDcSet = true
                     }
@@ -736,9 +521,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.types) {
-                if (dc!!.types != null) {
-                    for (i in dc!!.types!!) {
+            if (dcEnabled.types) {
+                if (dc.types != null) {
+                    for (i in dc.types!!) {
                         dcS.addType(i)
                         atLeastOneXmpDcSet = true
                     }
@@ -753,9 +538,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.languages) {
-                if (dc!!.languages != null) {
-                    for (i in dc!!.languages!!) {
+            if (dcEnabled.languages) {
+                if (dc.languages != null) {
+                    for (i in dc.languages!!) {
                         dcS.addLanguage(i)
                         atLeastOneXmpDcSet = true
                     }
@@ -770,9 +555,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.creators) {
-                if (dc!!.creators != null) {
-                    for (i in dc!!.creators!!) {
+            if (dcEnabled.creators) {
+                if (dc.creators != null) {
+                    for (i in dc.creators!!) {
                         dcS.addCreator(i)
                         atLeastOneXmpDcSet = true
                     }
@@ -787,9 +572,9 @@ class MetadataInfo {
                 }
             }
             //
-            if (dcEnabled!!.coverage) {
-                if (dc!!.coverage != null) {
-                    dcS.coverage = dc!!.coverage
+            if (dcEnabled.coverage) {
+                if (dc.coverage != null) {
+                    dcS.coverage = dc.coverage
                     atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
@@ -799,9 +584,9 @@ class MetadataInfo {
                     atLeastOneXmpDcSet = true
                 }
             }
-            if (dcEnabled!!.format) {
-                if (dc!!.format != null) {
-                    dcS.format = dc!!.format
+            if (dcEnabled.format) {
+                if (dc.format != null) {
+                    dcS.format = dc.format
                     atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
@@ -811,9 +596,9 @@ class MetadataInfo {
                     atLeastOneXmpDcSet = true
                 }
             }
-            if (dcEnabled!!.identifier) {
-                if (dc!!.identifier != null) {
-                    dcS.identifier = dc!!.identifier
+            if (dcEnabled.identifier) {
+                if (dc.identifier != null) {
+                    dcS.identifier = dc.identifier
                     atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
@@ -823,9 +608,9 @@ class MetadataInfo {
                     atLeastOneXmpDcSet = true
                 }
             }
-            if (dcEnabled!!.rights) {
-                if (dc!!.rights != null) {
-                    dcS.addRights(null, dc!!.rights)
+            if (dcEnabled.rights) {
+                if (dc.rights != null) {
+                    dcS.addRights(null, dc.rights)
                     atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
@@ -840,9 +625,9 @@ class MetadataInfo {
                     }
                 }
             }
-            if (dcEnabled!!.source) {
-                if (dc!!.source != null) {
-                    dcS.source = dc!!.source
+            if (dcEnabled.source) {
+                if (dc.source != null) {
+                    dcS.source = dc.source
                     atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
@@ -852,9 +637,9 @@ class MetadataInfo {
                     atLeastOneXmpDcSet = true
                 }
             }
-            if (dcEnabled!!.description) {
-                if (dc!!.description != null) {
-                    dcS.description = dc!!.description
+            if (dcEnabled.description) {
+                if (dc.description != null) {
+                    dcS.description = dc.description
                     atLeastOneXmpDcSet = true
                 }
             } else if (dcOld != null) {
@@ -864,10 +649,10 @@ class MetadataInfo {
                     atLeastOneXmpDcSet = true
                 }
             }
-            if (dcEnabled!!.dates) {
-                if (dc!!.dates != null) {
-                    for (date in dc!!.dates!!) {
-                        dcS.addDate(date)
+            if (dcEnabled.dates) {
+                if (dc.dates != null) {
+                    for (date in dc.dates!!) {
+                        dcS.addDate(date.toCalendar())
                         atLeastOneXmpDcSet = true
                     }
                 }
@@ -885,11 +670,11 @@ class MetadataInfo {
         // XMP Rights
         val riOld = xmpOld?.xmpRightsManagementSchema
         var atLeastOneXmpRightsSet = false
-        if (rightsEnabled!!.atLeastOne() || riOld != null) {
+        if (rightsEnabled.atLeastOne() || riOld != null) {
             val ri = xmpNew.createAndAddXMPRightsManagementSchema()
-            if (rightsEnabled!!.certificate) {
-                if (rights!!.certificate != null) {
-                    ri.certificate = rights!!.certificate
+            if (rightsEnabled.certificate) {
+                if (rights.certificate != null) {
+                    ri.certificate = rights.certificate
                     atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
@@ -899,9 +684,9 @@ class MetadataInfo {
                     atLeastOneXmpRightsSet = true
                 }
             }
-            if (rightsEnabled!!.marked) {
-                if (rights!!.marked != null) {
-                    ri.marked = rights!!.marked
+            if (rightsEnabled.marked) {
+                if (rights.marked != null) {
+                    ri.marked = rights.marked
                     atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
@@ -911,9 +696,9 @@ class MetadataInfo {
                     atLeastOneXmpRightsSet = true
                 }
             }
-            if (rightsEnabled!!.owner) {
-                if (rights!!.owner != null) {
-                    for (i in rights!!.owner!!) {
+            if (rightsEnabled.owner) {
+                if (rights.owner != null) {
+                    for (i in rights.owner!!) {
                         ri.addOwner(i)
                         atLeastOneXmpRightsSet = true
                     }
@@ -927,9 +712,9 @@ class MetadataInfo {
                     }
                 }
             }
-            if (rightsEnabled!!.usageTerms) {
-                if (rights!!.usageTerms != null) {
-                    ri.usageTerms = rights!!.usageTerms
+            if (rightsEnabled.usageTerms) {
+                if (rights.usageTerms != null) {
+                    ri.usageTerms = rights.usageTerms
                     atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
@@ -939,9 +724,9 @@ class MetadataInfo {
                     atLeastOneXmpRightsSet = true
                 }
             }
-            if (rightsEnabled!!.webStatement) {
-                if (rights!!.webStatement != null) {
-                    ri.webStatement = rights!!.webStatement
+            if (rightsEnabled.webStatement) {
+                if (rights.webStatement != null) {
+                    ri.webStatement = rights.webStatement
                     atLeastOneXmpRightsSet = true
                 }
             } else if (riOld != null) {
@@ -954,7 +739,7 @@ class MetadataInfo {
         }
 
         // Do the save
-        if (basicEnabled!!.atLeastOne() || pdfEnabled!!.atLeastOne() || dcEnabled!!.atLeastOne() || rightsEnabled!!.atLeastOne() ||
+        if (basicEnabled.atLeastOne() || pdfEnabled.atLeastOne() || dcEnabled.atLeastOne() || rightsEnabled.atLeastOne() ||
             atLeastOneXmpBasicSet || atLeastOneXmpPdfSet || atLeastOneXmpDcSet || atLeastOneXmpRightsSet
         ) {
             val metadataStream = PDMetadata(document)
@@ -968,70 +753,68 @@ class MetadataInfo {
             }
             catalog.metadata = metadataStream
         }
-        document.save(pdfFile.absolutePath)
+        document.save(pdfFile)
     }
 
-    @JvmOverloads
-    @Throws(Exception::class)
     fun saveAsPDF(pdfFile: File, newFile: File? = null) {
-        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30720))
+        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720))
             .use { document -> saveToPDF(document, newFile ?: pdfFile) }
     }
 
     fun copyDocToXMP() {
-        pdf!!.keywords = doc!!.keywords
-        pdf!!.producer = doc!!.producer
-        pdfEnabled!!.keywords = docEnabled!!.keywords
-        pdfEnabled!!.producer = docEnabled!!.producer
-        basic!!.createDate = doc!!.creationDate
-        basic!!.modifyDate = doc!!.modificationDate
-        basicEnabled!!.createDate = docEnabled!!.creationDate
-        basicEnabled!!.modifyDate = docEnabled!!.modificationDate
-        basic!!.creatorTool = doc!!.creator
-        basicEnabled!!.creatorTool = docEnabled!!.creator
-        dc!!.title = doc!!.title
-        dc!!.description = doc!!.subject
-        dc!!.creators = Arrays.asList(*arrayOf(doc!!.author))
-        dcEnabled!!.title = docEnabled!!.title
-        dcEnabled!!.description = docEnabled!!.subject
-        dcEnabled!!.creators = docEnabled!!.author
+        pdf.keywords = doc.keywords
+        pdf.producer = doc.producer
+        pdfEnabled.keywords = docEnabled.keywords
+        pdfEnabled.producer = docEnabled.producer
+        basic.createDate = doc.creationDate
+        basic.modifyDate = doc.modificationDate
+        basicEnabled.createDate = docEnabled.creationDate
+        basicEnabled.modifyDate = docEnabled.modificationDate
+        basic.creatorTool = doc.creator
+        basicEnabled.creatorTool = docEnabled.creator
+        dc.title = doc.title
+        dc.description = doc.subject
+        dc.creators = mutableListOf(doc.author!!)
+        dcEnabled.title = docEnabled.title
+        dcEnabled.description = docEnabled.subject
+        dcEnabled.creators = docEnabled.author
     }
 
     fun copyXMPToDoc() {
-        doc!!.keywords = pdf!!.keywords
-        doc!!.producer = pdf!!.producer
-        docEnabled!!.keywords = pdfEnabled!!.keywords
-        docEnabled!!.producer = pdfEnabled!!.producer
-        doc!!.creationDate = basic!!.createDate
-        doc!!.modificationDate = basic!!.modifyDate
-        docEnabled!!.creationDate = basicEnabled!!.createDate
-        docEnabled!!.modificationDate = basicEnabled!!.modifyDate
-        doc!!.creator = basic!!.creatorTool
-        docEnabled!!.creator = basicEnabled!!.creatorTool
-        doc!!.title = dc!!.title
-        doc!!.subject = dc!!.description
+        doc.keywords = pdf.keywords
+        doc.producer = pdf.producer
+        docEnabled.keywords = pdfEnabled.keywords
+        docEnabled.producer = pdfEnabled.producer
+        doc.creationDate = basic.createDate
+        doc.modificationDate = basic.modifyDate
+        docEnabled.creationDate = basicEnabled.createDate
+        docEnabled.modificationDate = basicEnabled.modifyDate
+        doc.creator = basic.creatorTool
+        docEnabled.creator = basicEnabled.creatorTool
+        doc.title = dc.title
+        doc.subject = dc.description
         var author: String? = ""
-        if (dc!!.creators != null) {
+        if (dc.creators != null) {
             var delim = ""
-            for (creator in dc!!.creators!!) {
+            for (creator in dc.creators!!) {
                 author += delim + creator
                 delim = ", "
             }
         } else {
             author = null
         }
-        doc!!.author = author
-        docEnabled!!.title = dcEnabled!!.title
-        docEnabled!!.subject = dcEnabled!!.description
-        docEnabled!!.author = dcEnabled!!.creators
+        doc.author = author
+        docEnabled.title = dcEnabled.title
+        docEnabled.subject = dcEnabled.description
+        docEnabled.author = dcEnabled.creators
     }
 
     fun setEnabled(value: Boolean) {
-        docEnabled!!.setAll(value)
-        basicEnabled!!.setAll(value)
-        pdfEnabled!!.setAll(value)
-        dcEnabled!!.setAll(value)
-        rightsEnabled!!.setAll(value)
+        docEnabled.setAll(value)
+        basicEnabled.setAll(value)
+        pdfEnabled.setAll(value)
+        dcEnabled.setAll(value)
+        rightsEnabled.setAll(value)
     }
 
     fun setEnabled(id: String, value: Boolean) {
@@ -1071,7 +854,7 @@ class MetadataInfo {
         }
     }
 
-    override fun clone(): MetadataInfo {
+    fun clone(): MetadataInfo {
         val md = MetadataInfo()
         md.copyFrom(this)
         return md
@@ -1092,21 +875,21 @@ class MetadataInfo {
         }
     }
 
-    fun copyUnsetExpanded(other: MetadataInfo, expandInfo: MetadataInfo?) {
+    fun copyUnsetExpanded(other: MetadataInfo) {
         for (fieldName in keys()) {
             val o = get(fieldName)
             if (o == null) {
                 var otherVal = other[fieldName]
                 if (otherVal is String) {
                     val ts = TemplateString(otherVal)
-                    otherVal = ts.process(expandInfo)
+                    otherVal = ts.process(this)
                 }
                 set(fieldName, otherVal)
             }
         }
     }
 
-    fun expand(expandInfo: MetadataInfo?) {
+    fun expand(expandInfo: MetadataInfo) {
         for (fieldName in keys()) {
             val o = get(fieldName)
             if (o != null) {
@@ -1122,11 +905,11 @@ class MetadataInfo {
 
     fun enableOnlyNonNull() {
         val values: Map<String, Any?> = asFlatMap()
-        docEnabled!!.setAll(false)
-        basicEnabled!!.setAll(false)
-        pdfEnabled!!.setAll(false)
-        dcEnabled!!.setAll(false)
-        rightsEnabled!!.setAll(false)
+        docEnabled.setAll(false)
+        basicEnabled.setAll(false)
+        pdfEnabled.setAll(false)
+        dcEnabled.setAll(false)
+        rightsEnabled.setAll(false)
         for ((key, value) in values) {
             if (value != null) {
                 setEnabled(key, true)
@@ -1138,8 +921,8 @@ class MetadataInfo {
     fun toJson(pretty: Boolean = false): String {
         val map: Map<String, Any?> = asFlatMap { t: Any? ->
             if (t != null) {
-                if (t is Calendar) {
-                    return@asFlatMap formatDateTimeFull((t as Calendar?)!!)
+                if (t is Instant) {
+                    return@asFlatMap formatDateTimeFull(t)
                 }
             }
             t
@@ -1166,16 +949,14 @@ class MetadataInfo {
         val map = yaml.load<Map<String?, Any?>>(yamlString)
         fromFlatMap(map) { t: Any? ->
             if (t is Date) {
-                val cal = Calendar.getInstance()
-                cal.time = t
-                return@fromFlatMap cal
+                return@fromFlatMap t.toInstant()
             }
             t
         }
     }
 
     fun isEquivalent(other: MetadataInfo): Boolean {
-        for ((key, value) in _mdFields!!) {
+        for ((key, value) in _mdFields) {
             // Skip file.* fields, as they are read only and come from file metadata
             if (key.startsWith("file.")) {
                 continue
@@ -1190,9 +971,9 @@ class MetadataInfo {
                     false
                 }
             }
-            if (fd.isList && fd.type === FieldID.FieldType.DATE) {
-                val tl = t as List<Calendar>
-                val ol = o as List<Calendar>
+            if (fd.isList && fd.type === FieldId.FieldType.DATE) {
+                val tl = t as List<Instant>
+                val ol = o as List<Instant>
                 if (tl.size != ol.size) {
                     return false
                 }
@@ -1206,12 +987,12 @@ class MetadataInfo {
                             false
                         }
                     }
-                    if (tc.timeInMillis / 1000 != oc.timeInMillis / 1000) {
+                    if (tc.epochSecond != oc.epochSecond) {
                         return false
                     }
                 }
-            } else if (t is Calendar && o is Calendar) {
-                if (t.timeInMillis / 1000 != o.timeInMillis / 1000) {
+            } else if (t is Instant && o is Instant) {
+                if (t.epochSecond != o.epochSecond) {
                     return false
                 }
             } else if (t != o) {
@@ -1224,19 +1005,19 @@ class MetadataInfo {
     fun asPersistenceString(): String {
         val map = asFlatMap()
         // Don't store null values as they are the default
-        for (key in _mdFields!!.keys) {
+        for (key in _mdFields.keys) {
             if (map[key] == null) {
                 map.remove(key)
             }
         }
         val enabledMap: MutableMap<String, Boolean> = LinkedHashMap()
         // Don't store true values as they are the default
-        for (keyEnabled in _mdEnabledFields!!.keys) {
+        for (keyEnabled in _mdEnabledFields.keys) {
             if (!isEnabled(keyEnabled)) {
                 enabledMap[keyEnabled] = false
             }
         }
-        if (enabledMap.size > 0) {
+        if (enabledMap.isNotEmpty()) {
             map["_enabled"] = enabledMap
         }
         val options = DumperOptions()
@@ -1245,143 +1026,37 @@ class MetadataInfo {
         return yaml.dump(map)
     }
 
-    class FieldDescription {
-        val name: String
-        val field: Field
-        val type: FieldID.FieldType?
-        val isList: Boolean
-        val isWritable: Boolean
-
-        constructor(name: String, field: Field, type: FieldID.FieldType?, isWritable: Boolean) {
-            this.name = name
-            this.field = field
-            this.type = type
-            this.isWritable = isWritable
-            isList = MutableList::class.java.isAssignableFrom(field.type)
-        }
-
-        constructor(name: String, field: Field, isWritable: Boolean) {
-            val klass = field.type
-            if (Boolean::class.java.isAssignableFrom(klass)) {
-                type = FieldID.FieldType.BOOL
-            } else if (Calendar::class.java.isAssignableFrom(klass)) {
-                type = FieldID.FieldType.DATE
-            } else if (Int::class.java.isAssignableFrom(klass)) {
-                type = FieldID.FieldType.INT
-            } else if (Long::class.java.isAssignableFrom(klass)) {
-                type = FieldID.FieldType.LONG
-            } else {
-                type = FieldID.FieldType.STRING
-            }
-            this.name = name
-            this.field = field
-            this.isWritable = isWritable
-            isList = MutableList::class.java.isAssignableFrom(klass)
-        }
-
-        fun makeStringFromValue(value: Any?): String {
-            if (value == null) {
-                return ""
-            }
-            return if (isList) {
-                humanReadable(value as List<*>?)
-            } else if (type === FieldID.FieldType.DATE) {
-                formatDateTime((value as Calendar?)!!)
-            } else if (type === FieldID.FieldType.BOOL) {
-                if (value as Boolean) "true" else "false"
-            } else {
-                value.toString()
-            }
-        }
-
-        fun makeValueFromString(value: String?): Any? {
-            if (value == null) {
-                return null
-            }
-            if (isList) {
-                if (type === FieldID.FieldType.STRING) {
-                    return Arrays.asList(value)
-                } else if (type === FieldID.FieldType.TEXT) {
-                    return Arrays.asList(*value.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray())
-                } else if (type === FieldID.FieldType.INT) {
-                    // TODO: possible allow comma separated interger list
-                    return Arrays.asList(value.toInt())
-                } else if (type === FieldID.FieldType.BOOL) {
-                    // TODO: possible allow comma separated boolean list
-                    val v = value.lowercase(Locale.getDefault()).trim { it <= ' ' }
-                    var b: Boolean? = null
-                    if (v == "true" || v == "yes") b = true
-                    if (v == "false" || v == "no") b = false
-                    return Arrays.asList(b)
-                } else if (type === FieldID.FieldType.DATE) {
-                    val rval: MutableList<Calendar> = ArrayList()
-                    for (line in value.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()) {
-                        try {
-                            rval.add(parseDate(line.trim { it <= ' ' }))
-                        } catch (e: ParseError) {
-                            throw RuntimeException("makeValueFromString() Invalid date format:$line")
-                        }
-                    }
-                    return rval
-                }
-            } else {
-                if (type === FieldID.FieldType.STRING) {
-                    return value
-                } else if (type === FieldID.FieldType.TEXT) {
-                    return value
-                } else if (type === FieldID.FieldType.INT) {
-                    return value.toInt()
-                } else if (type === FieldID.FieldType.BOOL) {
-                    val v = value.lowercase(Locale.getDefault()).trim { it <= ' ' }
-                    if (v == "true" || v == "yes") return true
-                    return if (v == "false" || v == "no") false else null
-                } else if (type === FieldID.FieldType.DATE) {
-                    return try {
-                        parseDate(value)
-                    } catch (e: ParseError) {
-                        throw RuntimeException("makeValueFromString() Invalid date format:$value")
-                    }
-                }
-            }
-            throw RuntimeException("makeValueFromString() :Don't know how to convert to type:$type")
-        }
-    }
-
-    init {
-        clear()
-    }
-
-    protected fun getStructObject(
+    private fun getStructObject(
         id: String,
-        mdFields: Map<String, List<FieldDescription>>?,
+        mdFields: Map<String, List<MetadataFieldDescription>>?,
         parent: Boolean,
         toString: Boolean,
         useDefault: Boolean,
-        defaultValue: Any
-    ): Any {
+        defaultValue: Any?
+    ): Any? {
         val fields = mdFields!![id]
-        if (fields == null || fields.size == 0) {
+        if (fields.isNullOrEmpty()) {
             if (useDefault) {
                 return defaultValue
             }
             throw RuntimeException("getStructObject: No field for '$id'")
         }
-        var current: Any = this
-        var fieldD: FieldDescription? = null
+        var current: Any? = this
+        var fieldD: MetadataFieldDescription? = null
         for (i in 0 until fields.size - if (parent) 1 else 0) {
             try {
                 fieldD = fields[i]
-                current = fieldD.field[current]
+                current = fieldD.field.get(current)
             } catch (e: IllegalArgumentException) {
                 if (useDefault) {
                     return defaultValue
                 }
-                throw RuntimeException("_getStructObject('$id') IllegalArgumentException:$e")
+                throw IllegalArgumentException("getStructObject('$id')", e)
             } catch (e: IllegalAccessException) {
                 if (useDefault) {
                     return defaultValue
                 }
-                throw RuntimeException("_getStructObject('$id') IllegalAccessException$e")
+                throw RuntimeException("getStructObject('$id') ${e.message}")
             }
         }
         return if (toString) {
@@ -1389,7 +1064,7 @@ class MetadataInfo {
         } else current
     }
 
-    operator fun get(id: String): Any {
+    operator fun get(id: String): Any? {
         return getStructObject(id, _mdFields, false, false, false, null)
     }
 
@@ -1398,27 +1073,27 @@ class MetadataInfo {
     }
 
     operator fun get(id: String, defaultValue: Any): Any {
-        return getStructObject(id, _mdFields, false, false, true, defaultValue)
+        return getStructObject(id, _mdFields, false, false, true, defaultValue)!!
     }
 
     fun getString(id: String, defaultValue: String): String {
         return getStructObject(id, _mdFields, false, true, true, defaultValue) as String
     }
 
-    protected fun _getObjectEnabled(id: String): Boolean {
+    private fun _getObjectEnabled(id: String): Boolean {
         return getStructObject(id, _mdEnabledFields, false, false, true, false) as Boolean
     }
 
-    protected fun _setStructObject(
+    private fun _setStructObject(
         id: String,
         value: Any?,
         append: Boolean,
         fromString: Boolean,
-        mdFields: Map<String, List<FieldDescription>>?
+        mdFields: Map<String, List<MetadataFieldDescription>>?
     ) {
         var value = value
         val fields = mdFields!![id]
-        if (fields == null || fields.size == 0) {
+        if (fields.isNullOrEmpty()) {
             throw RuntimeException("_setStructObject('$id') No such field")
         }
         val current = getStructObject(id, mdFields, true, false, false, null)
@@ -1429,23 +1104,23 @@ class MetadataInfo {
                 value = fieldD.makeValueFromString(value.toString())
             }
             if (fieldD.isList && append) {
-                var l = fieldD.field[current] as MutableList<Any?>
+                var l: MutableList<Any>? = fieldD.field.get(current) as MutableList<Any>?
                 if (l == null) {
-                    l = ArrayList()
+                    l = mutableListOf()
                 }
                 if (MutableList::class.java.isAssignableFrom(value!!.javaClass)) {
-                    l.addAll((value as List<*>?)!!)
+                    l.addAll((value as List<Any>))
                 } else {
                     l.add(value)
                 }
-                fieldD.field[current] = l
+                fieldD.field.set(current, l)
             } else {
-                fieldD.field[current] = value
+                fieldD.field.set(current, value)
             }
         } catch (e: IllegalArgumentException) {
-            throw RuntimeException("_setStructObject('$id') IllegalArgumentException:$e")
+            throw IllegalArgumentException("_setStructObject('$id')", e)
         } catch (e: IllegalAccessException) {
-            throw RuntimeException("_setStructObject('$id') IllegalAccessException$e")
+            throw IllegalAccessException("_setStructObject('$id') ${e.message}")
         }
     }
 
@@ -1465,14 +1140,14 @@ class MetadataInfo {
         _setStructObject(id, value, true, true, _mdFields)
     }
 
-    protected fun _setObjectEnabled(id: String, value: Boolean) {
+    private fun _setObjectEnabled(id: String, value: Boolean) {
         _setStructObject(id, value, false, false, _mdEnabledFields)
     }
 
     companion object {
-        protected var hrSizes = arrayOf("B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+        var hrSizes = arrayOf("B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
         fun keys(): List<String> {
-            return ArrayList(_mdFields!!.keys)
+            return _mdFields.keys.toList()
         }
 
         fun keyIsWritable(key: String): Boolean {
@@ -1486,9 +1161,9 @@ class MetadataInfo {
             val md = MetadataInfo()
             md.fromYAML(yamlString)
             val enMap = map["_enabled"]
-            if (enMap != null && MutableMap::class.java.isAssignableFrom(enMap.javaClass)) {
+            if (enMap != null && Map::class.java.isAssignableFrom(enMap.javaClass)) {
                 val enabledMap = enMap as Map<String, Any>
-                for (fieldName in _mdEnabledFields!!.keys) {
+                for (fieldName in _mdEnabledFields.keys) {
                     if (enabledMap.containsKey(fieldName)) {
                         md.setEnabled(fieldName, (enabledMap[fieldName] as Boolean?)!!)
                     }
@@ -1498,43 +1173,45 @@ class MetadataInfo {
         }
 
         private fun traverseFields(
-            ancestors: List<FieldDescription>,
+            ancestors: List<MetadataFieldDescription>,
             all: Boolean,
-            klass: Class<*>,
+            klass: KClass<*>,
             mdType: StructType,
-            consumer: Consumer<List<FieldDescription>>
+            consumer: Consumer<List<MetadataFieldDescription>>
         ) {
-            for (field in klass.fields) {
-                val mdStruct = field.getAnnotation(MdStruct::class.java)
+            for (prop in klass.memberProperties) {
+                val field = prop.javaField!!
+                field.isAccessible = true
+                val mdStruct = prop.findAnnotation<MdStruct>()
                 if (mdStruct != null && mdStruct.type === mdType) {
-                    var prefix = if (ancestors.size > 0) ancestors[ancestors.size - 1].name else ""
-                    if (prefix.length > 0) {
+                    var prefix = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].name else ""
+                    if (prefix.isNotEmpty()) {
                         prefix += "."
                     }
-                    val name = if (mdStruct.name.length > 0) mdStruct.name else field.name
-                    val t = FieldDescription(prefix + name, field, null, mdStruct.access === MdStruct.Access.READ_WRITE)
-                    val a: MutableList<FieldDescription> = ArrayList(ancestors)
+                    val name = mdStruct.name.ifEmpty { field.name }
+                    val t = MetadataFieldDescription(prefix + name, field, null, mdStruct.access === MdStruct.Access.READ_WRITE)
+                    val a: MutableList<MetadataFieldDescription> = ancestors.toMutableList()
                     a.add(t)
-                    traverseFields(a, true, field.type, mdType, consumer)
+                    traverseFields(a, true, prop.returnType.jvmErasure, mdType, consumer)
                 } else {
-                    val fieldId = field.getAnnotation(FieldID::class.java)
-                    val isParentWritable = if (ancestors.size > 0) ancestors[ancestors.size - 1].isWritable else true
+                    val fieldId = prop.findAnnotation<FieldId>()
+                    val isParentWritable = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].isWritable else true
                     if (fieldId != null) {
-                        var prefix = if (ancestors.size > 0) ancestors[ancestors.size - 1].name else ""
-                        if (prefix.length > 0) {
+                        var prefix = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].name else ""
+                        if (prefix.isNotEmpty()) {
                             prefix += "."
                         }
-                        val t = FieldDescription(prefix + fieldId.value, field, fieldId.type, isParentWritable)
-                        val a: MutableList<FieldDescription> = ArrayList(ancestors)
+                        val t = MetadataFieldDescription(prefix + fieldId.value, field, fieldId.type, isParentWritable)
+                        val a: MutableList<MetadataFieldDescription> = ancestors.toMutableList()
                         a.add(t)
                         consumer.accept(a)
                     } else if (all) {
-                        var prefix = if (ancestors.size > 0) ancestors[ancestors.size - 1].name else ""
-                        if (prefix.length > 0) {
+                        var prefix = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].name else ""
+                        if (prefix.isNotEmpty()) {
                             prefix += "."
                         }
-                        val t = FieldDescription(prefix + field.name, field, isParentWritable)
-                        val a: MutableList<FieldDescription> = ArrayList(ancestors)
+                        val t = MetadataFieldDescription(prefix + field.name, field, isParentWritable)
+                        val a: MutableList<MetadataFieldDescription> = ancestors.toMutableList()
                         a.add(t)
                         consumer.accept(a)
                     }
@@ -1542,77 +1219,41 @@ class MetadataInfo {
             }
         }
 
-        val _mdFields: MutableMap<String, List<FieldDescription>>? = null
-        val _mdEnabledFields: MutableMap<String, List<FieldDescription>>? = null
+        val _mdFields: Map<String, List<MetadataFieldDescription>>
+        val _mdEnabledFields: Map<String, List<MetadataFieldDescription>>
 
         init {
             _mdFields = LinkedHashMap()
             _mdEnabledFields = LinkedHashMap()
             traverseFields(
-                ArrayList(),
+                emptyList(),
                 false,
-                MetadataInfo::class.java,
+                MetadataInfo::class,
                 StructType.MD_STRUCT
-            ) { fieldDescs: List<FieldDescription> ->
-                if (fieldDescs.size > 0) {
+            ) { fieldDescs: List<MetadataFieldDescription> ->
+                if (fieldDescs.isNotEmpty()) {
                     _mdFields[fieldDescs[fieldDescs.size - 1].name] = fieldDescs
                 }
             }
             traverseFields(
-                ArrayList(),
+                emptyList(),
                 false,
-                MetadataInfo::class.java,
+                MetadataInfo::class,
                 StructType.MD_ENABLE_STRUCT
-            ) { fieldDescs: List<FieldDescription> ->
-                if (fieldDescs.size > 0) {
+            ) { fieldDescs: List<MetadataFieldDescription> ->
+                if (fieldDescs.isNotEmpty()) {
                     _mdEnabledFields[fieldDescs[fieldDescs.size - 1].name] = fieldDescs
                 }
             }
         }
 
-        fun getFieldDescription(id: String): FieldDescription? {
-            val fields = _mdFields!![id]!!
-            return if (fields.size > 0) {
+        fun getFieldDescription(id: String): MetadataFieldDescription? {
+            val fields = _mdFields[id]!!
+            return if (fields.isNotEmpty()) {
                 fields[fields.size - 1]
             } else null
         }
 
-        @JvmStatic
-        val sampleMetadata: MetadataInfo
-            get() {
-                val md = MetadataInfo()
-                // Spec is at : http://partners.adobe.com/public/developer/en/xmp/sdk/XMPspecification.pdf
-                md.doc!!.title = "Dracula"
-                md.doc!!.author = "Bram Stoker"
-                md.doc!!.subject =
-                    "Horror tales, Epistolary fiction, Gothic fiction (Literary genre), Vampires -- Fiction, Dracula, Count (Fictitious character) -- Fiction, Transylvania (Romania) -- Fiction, Whitby (England) -- Fiction"
-                md.doc!!.keywords = "Horror, Gothic, Vampires"
-                md.doc!!.creator = "Adobe InDesign CS4 (6.0.6)"
-                md.doc!!.producer = "Adobe PDF Library 9.0"
-                md.doc!!.creationDate = parseDateOrNull("2012-12-12 00:00:00")
-                md.doc!!.modificationDate = parseDateOrNull("2012-12-13 00:00:00")
-                md.doc!!.trapped = "True"
-                md.basic!!.creatorTool = "Adobe InDesign CS4 (6.0.6)"
-                md.basic!!.createDate = md.doc!!.creationDate
-                md.basic!!.modifyDate = md.doc!!.modificationDate
-                md.basic!!.baseURL = "https://www.gutenberg.org/"
-                md.basic!!.rating = 3
-                md.basic!!.label = "Horror Fiction Collection"
-                md.basic!!.nickname = "dracula"
-                md.basic!!.identifiers = mutableListOf("Dracula_original_edition")
-                //md.xmpBasic.advisories ;
-                md.basic!!.metadataDate = parseDateOrNull("2012-12-14 00:00:00")
-                md.pdf!!.pdfVersion = "1.5"
-                md.pdf!!.keywords = md.doc!!.keywords
-                md.pdf!!.producer = "Adobe PDF Library 9.0"
-                md.dc!!.title = md.doc!!.title
-                md.dc!!.description = "The famous Bram Stocker book"
-                md.dc!!.creators = ArrayList()
-                md.dc!!.creators.add("Bram Stocker")
-                md.dc!!.subjects =
-                    Arrays.asList(*md.doc!!.subject!!.split("\\s*,\\s*".toRegex()).dropLastWhile { it.isEmpty() }
-                        .toTypedArray())
-                return md
-            }
+
     }
 }

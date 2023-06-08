@@ -1,17 +1,13 @@
 package app.pdfx
 
-class CommandDescription protected constructor(@JvmField var name: String, var description: String) {
-    var regKey: String
+class CommandDescription private constructor(val name: String, val description: String) {
+    var regKey: String = "pme." + regKeyCount++ + description
     override fun toString(): String {
         return description
     }
 
     fun `is`(command: String): Boolean {
-        return description == command
-    }
-
-    init {
-        regKey = "pme." + regKeyCount++ + description
+        return name == command
     }
 
     companion object {
@@ -30,7 +26,7 @@ class CommandDescription protected constructor(@JvmField var name: String, var d
             val sb = StringBuilder()
             for (cd in batchCommands) {
                 sb.append("  ")
-                sb.append(String.format("%1$-" + descriptionOffset + "s", cd.description))
+                sb.append(String.format("%1$-" + descriptionOffset + "s", cd.name))
                 sb.append(cd.description)
                 sb.append('\n')
             }
@@ -39,7 +35,7 @@ class CommandDescription protected constructor(@JvmField var name: String, var d
 
         fun getBatchCommand(command: String): CommandDescription? {
             for (c in batchCommands) {
-                if (c.description == command) {
+                if (c.name == command) {
                     return c
                 }
             }

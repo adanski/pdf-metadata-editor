@@ -1,13 +1,16 @@
 package app.pdfx
 
+import app.pdfx.annotations.FieldId
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.PDPage
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
 import java.math.BigInteger
 import java.nio.charset.Charset
 import java.nio.file.Files
+import java.time.Instant
 import java.util.*
 import java.util.function.Supplier
 
@@ -15,62 +18,56 @@ class MetadataInfoTest {
     class PMTuple(val file: File, val md: MetadataInfo)
 
     @Test
-    fun testSimpleEquality() {
-        Assertions.assertTrue(MetadataInfo().isEquivalent(MetadataInfo()))
-        Assertions.assertTrue(MetadataInfo.getSampleMetadata().isEquivalent(MetadataInfo.getSampleMetadata()))
+    fun `test simple equality`() {
+        assertTrue(MetadataInfo().isEquivalent(MetadataInfo()))
+        assertTrue(DEMO_METADATA.isEquivalent(DEMO_METADATA))
         val md1 = MetadataInfo()
         val md2 = MetadataInfo()
         md1.setAppendFromString("doc.title", "a title")
         Assertions.assertFalse(md1.isEquivalent(md2))
         md2.setAppendFromString("doc.title", md1.getString("doc.title"))
-        Assertions.assertTrue(md1.isEquivalent(md2))
+        assertTrue(md1.isEquivalent(md2))
         md1.setAppendFromString("basic.rating", "333")
         Assertions.assertFalse(md1.isEquivalent(md2))
         md2.setAppendFromString("basic.rating", "333")
-        Assertions.assertTrue(md1.isEquivalent(md2))
+        assertTrue(md1.isEquivalent(md2))
         md1.setAppendFromString("rights.marked", "true")
         Assertions.assertFalse(md1.isEquivalent(md2))
         md2.setAppendFromString("rights.marked", "true")
-        Assertions.assertTrue(md1.isEquivalent(md2))
+        assertTrue(md1.isEquivalent(md2))
     }
 
     @Test
-    @Throws(Exception::class)
-    fun testEmptyLoad() {
+    fun `test empty load`() {
         val md = MetadataInfo()
         md.loadFromPDF(emptyPdf())
-        Assertions.assertTrue(md.isEquivalent(MetadataInfo()))
+        assertTrue(md.isEquivalent(MetadataInfo()))
     }
 
     @Test
-    @Throws(Exception::class)
-    fun testFuzzing() {
+    fun `test fuzzing`() {
         for (t in randomFiles(NUM_FILES)) {
             val loaded = MetadataInfo()
             loaded.loadFromPDF(t.file)
-            Assertions.assertTrue(t.md.isEquivalent(loaded), errorMessage(t, loaded))
+            assertTrue(t.md.isEquivalent(loaded), errorMessage(t, loaded))
         }
     }
 
     companion object {
         var NUM_FILES = 5
-        @Throws(Exception::class)
+
         fun emptyPdf(): File {
             val temp = Files.createTempFile("test-file", ".pdf").toFile()
-            val doc = PDDocument()
-            try {
+            PDDocument().use { doc ->
                 // a valid PDF document requires at least one page
                 val blankPage = PDPage()
                 doc.addPage(blankPage)
                 doc.save(temp)
-            } finally {
-                doc.close()
             }
             temp.deleteOnExit()
             return temp
         }
 
-        @Throws(Exception::class)
         fun csvFile(lines: List<String?>?): File {
             val temp = Files.createTempFile("test-csv", ".csv").toFile()
             Files.write(temp.toPath(), lines, Charset.forName("UTF-8"))
@@ -78,11 +75,10 @@ class MetadataInfoTest {
             return temp
         }
 
-        @Throws(Exception::class)
         fun randomFiles(numFiles: Int): List<PMTuple> {
             val fields = MetadataInfo.keys()
             val numFields = fields.size
-            val rval: MutableList<PMTuple> = ArrayList()
+            val rval: MutableList<PMTuple> = mutableListOf()
             val rand = Random()
             for (i in 0 until numFiles) {
                 val md = MetadataInfo()
@@ -105,18 +101,17 @@ class MetadataInfoTest {
                         continue
                     }
                     val fd = MetadataInfo.getFieldDescription(field)
-                    when (fd.type) {
-                        FieldID.FieldType.LONG -> md.setAppend(field, rand.nextInt(1000).toLong())
-                        FieldID.FieldType.INT -> md.setAppend(field, rand.nextInt(1000))
-                        FieldID.FieldType.BOOL -> md.setAppend(
+                    when (fd!!.type) {
+                        FieldId.FieldType.LONG -> md.setAppend(field, rand.nextInt(1000).toLong())
+                        FieldId.FieldType.INT -> md.setAppend(field, rand.nextInt(1000))
+                        FieldId.FieldType.BOOL -> md.setAppend(
                             field,
-                            if (rand.nextInt(1000) and 1 == 1) true else false
+                            rand.nextInt(1000) and 1 == 1
                         )
 
-                        FieldID.FieldType.DATE -> {
-                            val cal = Calendar.getInstance()
-                            cal.isLenient = false
-                            md.setAppend(field, cal)
+                        FieldId.FieldType.DATE -> {
+                            val d = Instant.now()
+                            md.setAppend(field, d)
                         }
 
                         else -> md.setAppend(field, BigInteger(130, rand).toString(32))

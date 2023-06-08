@@ -9,12 +9,12 @@ object Version {
     fun get(): VersionTuple {
         if (version == null) {
             val prop = Properties()
-            try {
+            version = try {
                 prop.load(VersionTuple::class.java.classLoader.getResourceAsStream("app/pdfx/version.properties"))
-                version = prop.getProperty("app.version", "0.0.0-dev")
+                prop.getProperty("app.version", "0.0.0-dev")
             } catch (e: IOException) {
                 e.printStackTrace()
-                version = "0.0.0-dev"
+                "0.0.0-dev"
             }
         }
         return VersionTuple(version)
