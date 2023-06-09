@@ -1,4 +1,4 @@
-package app.pdfx.structs
+package app.pdfx.metadata.struct
 
 class XmpPdf {
     var pdfVersion: String? = null

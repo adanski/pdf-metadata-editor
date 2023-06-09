@@ -1,10 +1,13 @@
-package app.pdfx
+package app.pdfx.metadata
 
 import app.pdfx.DateFormat.formatDateTimeFull
-import app.pdfx.annotations.FieldId
-import app.pdfx.annotations.MdStruct
-import app.pdfx.annotations.MdStruct.StructType
-import app.pdfx.structs.*
+import app.pdfx.TemplateString
+import app.pdfx.XmpParserProvider
+import app.pdfx.metadata.annotation.MdStruct
+import app.pdfx.metadata.annotation.MdStruct.Type
+import app.pdfx.metadata.struct.*
+import app.pdfx.toCalendar
+import app.pdfx.toInstants
 import com.google.gson.GsonBuilder
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.io.MemoryUsageSetting
@@ -23,14 +26,10 @@ import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util.*
-import java.util.function.Consumer
 import java.util.function.Function
 import javax.xml.transform.TransformerException
-import kotlin.reflect.KClass
-import kotlin.reflect.full.*
-import kotlin.reflect.jvm.javaField
-import kotlin.reflect.jvm.jvmErasure
 
+@MdStruct(type = Type.ROOT_STRUCT)
 class MetadataInfo {
 
     @MdStruct
@@ -48,26 +47,25 @@ class MetadataInfo {
     @MdStruct
     var rights: XmpRights
 
-    @JvmField
-    @MdStruct(name = "file", type = StructType.MD_STRUCT, access = MdStruct.Access.READ_ONLY)
+    @MdStruct(name = "file", access = MdStruct.Access.READ_ONLY)
     var file: FileInfo
 
-    @MdStruct(name = "doc", type = StructType.MD_ENABLE_STRUCT)
+    @MdStruct(name = "doc", type = Type.CHILD_ENABLE_STRUCT)
     var docEnabled: BasicEnabled
 
-    @MdStruct(name = "basic", type = StructType.MD_ENABLE_STRUCT)
+    @MdStruct(name = "basic", type = Type.CHILD_ENABLE_STRUCT)
     var basicEnabled: XmpBasicEnabled
 
-    @MdStruct(name = "pdf", type = StructType.MD_ENABLE_STRUCT)
+    @MdStruct(name = "pdf", type = Type.CHILD_ENABLE_STRUCT)
     var pdfEnabled: XmpPdfEnabled
 
-    @MdStruct(name = "dc", type = StructType.MD_ENABLE_STRUCT)
+    @MdStruct(name = "dc", type = Type.CHILD_ENABLE_STRUCT)
     var dcEnabled: XmpDublinCoreEnabled
 
-    @MdStruct(name = "rights", type = StructType.MD_ENABLE_STRUCT)
+    @MdStruct(name = "rights", type = Type.CHILD_ENABLE_STRUCT)
     var rightsEnabled: XmpRightsEnabled
 
-    @MdStruct(name = "file", type = StructType.MD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
+    @MdStruct(name = "file", type = Type.CHILD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
     var fileEnabled: FileInfoEnabled
 
     init {
@@ -774,7 +772,7 @@ class MetadataInfo {
         basicEnabled.creatorTool = docEnabled.creator
         dc.title = doc.title
         dc.description = doc.subject
-        dc.creators = mutableListOf(doc.author!!)
+        dc.creators = listOf(doc.author!!)
         dcEnabled.title = docEnabled.title
         dcEnabled.description = docEnabled.subject
         dcEnabled.creators = docEnabled.author
@@ -971,7 +969,7 @@ class MetadataInfo {
                     false
                 }
             }
-            if (fd.isList && fd.type === FieldId.FieldType.DATE) {
+            if (fd.list && fd.type == MetadataFieldType.DATE) {
                 val tl = t as List<Instant>
                 val ol = o as List<Instant>
                 if (tl.size != ol.size) {
@@ -1028,7 +1026,7 @@ class MetadataInfo {
 
     private fun getStructObject(
         id: String,
-        mdFields: Map<String, List<MetadataFieldDescription>>?,
+        mdFields: Map<String, List<MetadataField>>?,
         parent: Boolean,
         toString: Boolean,
         useDefault: Boolean,
@@ -1042,11 +1040,11 @@ class MetadataInfo {
             throw RuntimeException("getStructObject: No field for '$id'")
         }
         var current: Any? = this
-        var fieldD: MetadataFieldDescription? = null
+        var fieldD: MetadataField? = null
         for (i in 0 until fields.size - if (parent) 1 else 0) {
             try {
                 fieldD = fields[i]
-                current = fieldD.field.get(current)
+                current = fieldD.get(current!!)
             } catch (e: IllegalArgumentException) {
                 if (useDefault) {
                     return defaultValue
@@ -1089,7 +1087,7 @@ class MetadataInfo {
         value: Any?,
         append: Boolean,
         fromString: Boolean,
-        mdFields: Map<String, List<MetadataFieldDescription>>?
+        mdFields: Map<String, List<MetadataField>>?
     ) {
         var value = value
         val fields = mdFields!![id]
@@ -1103,8 +1101,8 @@ class MetadataInfo {
             if (fromString && value != null) {
                 value = fieldD.makeValueFromString(value.toString())
             }
-            if (fieldD.isList && append) {
-                var l: MutableList<Any>? = fieldD.field.get(current) as MutableList<Any>?
+            if (fieldD.list && append) {
+                var l: MutableList<Any>? = fieldD.get(current)
                 if (l == null) {
                     l = mutableListOf()
                 }
@@ -1113,9 +1111,9 @@ class MetadataInfo {
                 } else {
                     l.add(value)
                 }
-                fieldD.field.set(current, l)
+                fieldD.set(current, l)
             } else {
-                fieldD.field.set(current, value)
+                fieldD.set(current, value)
             }
         } catch (e: IllegalArgumentException) {
             throw IllegalArgumentException("_setStructObject('$id')", e)
@@ -1152,7 +1150,7 @@ class MetadataInfo {
 
         fun keyIsWritable(key: String): Boolean {
             val fd = getFieldDescription(key)
-            return fd?.isWritable ?: false
+            return fd?.writable ?: false
         }
 
         fun fromPersistenceString(yamlString: String?): MetadataInfo {
@@ -1172,88 +1170,15 @@ class MetadataInfo {
             return md
         }
 
-        private fun traverseFields(
-            ancestors: List<MetadataFieldDescription>,
-            all: Boolean,
-            klass: KClass<*>,
-            mdType: StructType,
-            consumer: Consumer<List<MetadataFieldDescription>>
-        ) {
-            for (prop in klass.memberProperties) {
-                val field = prop.javaField!!
-                field.isAccessible = true
-                val mdStruct = prop.findAnnotation<MdStruct>()
-                if (mdStruct != null && mdStruct.type === mdType) {
-                    var prefix = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].name else ""
-                    if (prefix.isNotEmpty()) {
-                        prefix += "."
-                    }
-                    val name = mdStruct.name.ifEmpty { field.name }
-                    val t = MetadataFieldDescription(prefix + name, field, null, mdStruct.access === MdStruct.Access.READ_WRITE)
-                    val a: MutableList<MetadataFieldDescription> = ancestors.toMutableList()
-                    a.add(t)
-                    traverseFields(a, true, prop.returnType.jvmErasure, mdType, consumer)
-                } else {
-                    val fieldId = prop.findAnnotation<FieldId>()
-                    val isParentWritable = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].isWritable else true
-                    if (fieldId != null) {
-                        var prefix = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].name else ""
-                        if (prefix.isNotEmpty()) {
-                            prefix += "."
-                        }
-                        val t = MetadataFieldDescription(prefix + fieldId.value, field, fieldId.type, isParentWritable)
-                        val a: MutableList<MetadataFieldDescription> = ancestors.toMutableList()
-                        a.add(t)
-                        consumer.accept(a)
-                    } else if (all) {
-                        var prefix = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].name else ""
-                        if (prefix.isNotEmpty()) {
-                            prefix += "."
-                        }
-                        val t = MetadataFieldDescription(prefix + field.name, field, isParentWritable)
-                        val a: MutableList<MetadataFieldDescription> = ancestors.toMutableList()
-                        a.add(t)
-                        consumer.accept(a)
-                    }
-                }
-            }
-        }
+        var _mdFields: Map<String, List<MetadataField>> = emptyMap()
+        var _mdEnabledFields: Map<String, List<MetadataField>> = emptyMap()
 
-        val _mdFields: Map<String, List<MetadataFieldDescription>>
-        val _mdEnabledFields: Map<String, List<MetadataFieldDescription>>
-
-        init {
-            _mdFields = LinkedHashMap()
-            _mdEnabledFields = LinkedHashMap()
-            traverseFields(
-                emptyList(),
-                false,
-                MetadataInfo::class,
-                StructType.MD_STRUCT
-            ) { fieldDescs: List<MetadataFieldDescription> ->
-                if (fieldDescs.isNotEmpty()) {
-                    _mdFields[fieldDescs[fieldDescs.size - 1].name] = fieldDescs
-                }
-            }
-            traverseFields(
-                emptyList(),
-                false,
-                MetadataInfo::class,
-                StructType.MD_ENABLE_STRUCT
-            ) { fieldDescs: List<MetadataFieldDescription> ->
-                if (fieldDescs.isNotEmpty()) {
-                    _mdEnabledFields[fieldDescs[fieldDescs.size - 1].name] = fieldDescs
-                }
-            }
-        }
-
-        fun getFieldDescription(id: String): MetadataFieldDescription? {
+        fun getFieldDescription(id: String): MetadataField? {
             val fields = _mdFields[id]!!
             return if (fields.isNotEmpty()) {
                 fields[fields.size - 1]
             } else null
         }
-
 
     }
 }

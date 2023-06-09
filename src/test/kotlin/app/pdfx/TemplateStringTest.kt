@@ -1,5 +1,6 @@
 package app.pdfx
 
+import app.pdfx.metadata.MetadataInfo
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

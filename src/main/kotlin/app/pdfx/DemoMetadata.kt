@@ -1,5 +1,7 @@
 package app.pdfx
 
+import app.pdfx.metadata.MetadataInfo
+
 val DEMO_METADATA: MetadataInfo = MetadataInfo().apply {
     // Spec is at : http://partners.adobe.com/public/developer/en/xmp/sdk/XMPspecification.pdf
     doc.title = "Dracula"
@@ -27,8 +29,7 @@ val DEMO_METADATA: MetadataInfo = MetadataInfo().apply {
     pdf.producer = "Adobe PDF Library 9.0"
     dc.title = doc.title
     dc.description = "The famous Bram Stocker book"
-    dc.creators = mutableListOf()
-    dc.creators!!.add("Bram Stocker")
+    dc.creators = listOf("Bram Stocker")
     dc.subjects =
         doc.subject!!.split("\\s*,\\s*".toRegex()).dropLastWhile { it.isEmpty() }
 }

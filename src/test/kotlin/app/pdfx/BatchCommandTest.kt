@@ -1,6 +1,7 @@
 package app.pdfx
 
 import app.pdfx.PdfMetadataEditBatch.ActionStatus
+import app.pdfx.metadata.MetadataInfo
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 

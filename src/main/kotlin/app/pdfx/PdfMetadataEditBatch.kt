@@ -1,6 +1,7 @@
 package app.pdfx
 
 import app.pdfx.CsvMetadata.readFile
+import app.pdfx.metadata.MetadataInfo
 import java.io.*
 import java.nio.file.Files
 import java.util.*

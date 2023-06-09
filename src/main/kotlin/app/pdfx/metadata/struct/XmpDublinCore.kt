@@ -1,16 +1,17 @@
-package app.pdfx.structs
+package app.pdfx.metadata.struct
 
-import app.pdfx.annotations.FieldId
+import app.pdfx.metadata.MetadataFieldType
+import app.pdfx.metadata.annotation.FieldId
 import java.time.Instant
 
 class XmpDublinCore {
     var title: String? = null
     var description: String? = null
-    var creators: MutableList<String>? = null
+    var creators: List<String>? = null
     var contributors: List<String>? = null
     var coverage: String? = null
 
-    @FieldId(value = "dates", type = FieldId.FieldType.DATE)
+    @FieldId(value = "dates", type = MetadataFieldType.DATE)
     var dates: List<Instant>? = null
     var format: String? = null
     var identifier: String? = null

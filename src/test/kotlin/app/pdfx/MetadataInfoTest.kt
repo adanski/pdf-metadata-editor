@@ -1,6 +1,7 @@
 package app.pdfx
 
-import app.pdfx.annotations.FieldId
+import app.pdfx.metadata.MetadataFieldType
+import app.pdfx.metadata.MetadataInfo
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.PDPage
 import org.junit.jupiter.api.Assertions
@@ -102,14 +103,14 @@ class MetadataInfoTest {
                     }
                     val fd = MetadataInfo.getFieldDescription(field)
                     when (fd!!.type) {
-                        FieldId.FieldType.LONG -> md.setAppend(field, rand.nextInt(1000).toLong())
-                        FieldId.FieldType.INT -> md.setAppend(field, rand.nextInt(1000))
-                        FieldId.FieldType.BOOL -> md.setAppend(
+                        MetadataFieldType.LONG -> md.setAppend(field, rand.nextInt(1000).toLong())
+                        MetadataFieldType.INT -> md.setAppend(field, rand.nextInt(1000))
+                        MetadataFieldType.BOOL -> md.setAppend(
                             field,
                             rand.nextInt(1000) and 1 == 1
                         )
 
-                        FieldId.FieldType.DATE -> {
+                        MetadataFieldType.DATE -> {
                             val d = Instant.now()
                             md.setAppend(field, d)
                         }

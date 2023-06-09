@@ -3,6 +3,7 @@ package app.pdfx
 import app.pdfx.CommandLine.Companion.mdFieldsHelpMessage
 import app.pdfx.Main.preferences
 import app.pdfx.Version.VersionTuple
+import app.pdfx.metadata.MetadataInfo
 import net.miginfocom.swing.MigLayout
 import okhttp3.OkHttpClient
 import okhttp3.Request

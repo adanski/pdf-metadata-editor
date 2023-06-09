@@ -2,6 +2,7 @@ package app.pdfx
 
 import app.pdfx.Main.executeCommand
 import app.pdfx.Main.preferences
+import app.pdfx.metadata.MetadataInfo
 import net.miginfocom.swing.MigLayout
 import java.awt.*
 import java.awt.event.ActionEvent

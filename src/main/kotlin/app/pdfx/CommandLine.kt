@@ -1,5 +1,6 @@
 package app.pdfx
 
+import app.pdfx.metadata.MetadataInfo
 import java.util.*
 
 class CommandLine {

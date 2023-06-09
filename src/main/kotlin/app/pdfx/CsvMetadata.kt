@@ -1,5 +1,6 @@
 package app.pdfx
 
+import app.pdfx.metadata.MetadataInfo
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import com.opencsv.ICSVParser

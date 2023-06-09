@@ -1,6 +1,7 @@
 package app.pdfx
 
 import app.pdfx.CommandLine.ParseError
+import app.pdfx.metadata.MetadataInfo
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -106,7 +107,7 @@ class CommandLineTest {
                 genList.add("$field=$dateString")
             } else if (field.endsWith(".rating")) {
                 genList.add("$field=17")
-            } else if (MetadataInfo.getFieldDescription(field)!!.isList) {
+            } else if (MetadataInfo.getFieldDescription(field)!!.list) {
                 genList.add("$field=$field")
                 genList.add("$field=$field")
             } else {
@@ -127,7 +128,7 @@ class CommandLineTest {
                 assertEquals(listOf(cal, cal), c.params.metadata[field])
             } else if (field.endsWith(".rating")) {
                 assertEquals(17, c.params.metadata[field])
-            } else if (MetadataInfo.getFieldDescription(field)!!.isList) {
+            } else if (MetadataInfo.getFieldDescription(field)!!.list) {
                 assertEquals(listOf(field, field), c.params.metadata[field])
             } else {
                 assertEquals(field, c.params.metadata[field])

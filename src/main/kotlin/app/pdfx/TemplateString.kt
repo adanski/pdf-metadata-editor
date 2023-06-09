@@ -1,5 +1,7 @@
 package app.pdfx
 
+import app.pdfx.metadata.MetadataInfo
+
 class TemplateString @JvmOverloads constructor(var template: String?, var length: Int = 0xFFFFFFF) {
     interface Entity {
         operator fun get(md: MetadataInfo): String

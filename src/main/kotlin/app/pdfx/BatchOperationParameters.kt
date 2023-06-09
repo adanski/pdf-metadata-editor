@@ -1,5 +1,7 @@
 package app.pdfx
 
+import app.pdfx.metadata.MetadataInfo
+
 class BatchOperationParameters {
     @JvmField
     var metadata = MetadataInfo()

@@ -1,4 +1,4 @@
-package app.pdfx.structs
+package app.pdfx.metadata.struct
 
 class XmpRights {
     var certificate: String? = null
