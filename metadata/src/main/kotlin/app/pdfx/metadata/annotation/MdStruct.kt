@@ -1,7 +1,7 @@
 package app.pdfx.metadata.annotation
 
 @Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.PROPERTY, AnnotationTarget.CLASS)
+@Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY, AnnotationTarget.CLASS)
 annotation class MdStruct(
     val name: String = "",
     val type: Type = Type.CHILD_STRUCT,

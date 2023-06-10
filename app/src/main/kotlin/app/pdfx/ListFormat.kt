@@ -2,7 +2,6 @@ package app.pdfx
 
 import app.pdfx.DateFormat.formatDateTime
 import java.time.Instant
-import java.util.*
 
 object ListFormat {
     fun humanReadable(list: List<Any>): String {

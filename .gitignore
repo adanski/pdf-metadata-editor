@@ -1,22 +1,3 @@
-######################
-# Eclipse
-######################
-*.pydevproject
-.project
-.metadata
-tmp/
-tmp/**/*
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.classpath
-.settings/
-.loadpath
-.factorypath
-/src/main/resources/rebel.xml
-
 # External tool builders
 .externalToolBuilders/**
 
@@ -58,13 +39,13 @@ out/
 # Maven
 ######################
 /log/
-/target/
+**/target/
 
 ######################
 # Gradle
 ######################
 .gradle/
-/build/
+**/build/
 
 ######################
 # Package Files

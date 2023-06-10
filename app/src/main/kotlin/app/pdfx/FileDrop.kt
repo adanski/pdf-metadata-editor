@@ -1,6 +1,5 @@
 package app.pdfx
 
-import app.pdfx.FileDrop.TransferableObject
 import java.awt.Component
 import java.awt.Container
 import java.awt.Point

@@ -32,40 +32,40 @@ import javax.xml.transform.TransformerException
 @MdStruct(type = Type.ROOT_STRUCT)
 class MetadataInfo {
 
-    @MdStruct
+    @field:MdStruct
     var doc: Basic
 
-    @MdStruct
+    @field:MdStruct
     var basic: XmpBasic
 
-    @MdStruct
+    @field:MdStruct
     var pdf: XmpPdf
 
-    @MdStruct
+    @field:MdStruct
     var dc: XmpDublinCore
 
-    @MdStruct
+    @field:MdStruct
     var rights: XmpRights
 
-    @MdStruct(name = "file", access = MdStruct.Access.READ_ONLY)
+    @field:MdStruct(name = "file", access = MdStruct.Access.READ_ONLY)
     var file: FileInfo
 
-    @MdStruct(name = "doc", type = Type.CHILD_ENABLE_STRUCT)
+    @field:MdStruct(name = "doc", type = Type.CHILD_ENABLE_STRUCT)
     var docEnabled: BasicEnabled
 
-    @MdStruct(name = "basic", type = Type.CHILD_ENABLE_STRUCT)
+    @field:MdStruct(name = "basic", type = Type.CHILD_ENABLE_STRUCT)
     var basicEnabled: XmpBasicEnabled
 
-    @MdStruct(name = "pdf", type = Type.CHILD_ENABLE_STRUCT)
+    @field:MdStruct(name = "pdf", type = Type.CHILD_ENABLE_STRUCT)
     var pdfEnabled: XmpPdfEnabled
 
-    @MdStruct(name = "dc", type = Type.CHILD_ENABLE_STRUCT)
+    @field:MdStruct(name = "dc", type = Type.CHILD_ENABLE_STRUCT)
     var dcEnabled: XmpDublinCoreEnabled
 
-    @MdStruct(name = "rights", type = Type.CHILD_ENABLE_STRUCT)
+    @field:MdStruct(name = "rights", type = Type.CHILD_ENABLE_STRUCT)
     var rightsEnabled: XmpRightsEnabled
 
-    @MdStruct(name = "file", type = Type.CHILD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
+    @field:MdStruct(name = "file", type = Type.CHILD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
     var fileEnabled: FileInfoEnabled
 
     init {
@@ -954,7 +954,7 @@ class MetadataInfo {
     }
 
     fun isEquivalent(other: MetadataInfo): Boolean {
-        for ((key, value) in _mdFields) {
+        for ((key, value) in FIELDS_BY_NAME) {
             // Skip file.* fields, as they are read only and come from file metadata
             if (key.startsWith("file.")) {
                 continue
@@ -1003,14 +1003,14 @@ class MetadataInfo {
     fun asPersistenceString(): String {
         val map = asFlatMap()
         // Don't store null values as they are the default
-        for (key in _mdFields.keys) {
+        for (key in FIELDS_BY_NAME.keys) {
             if (map[key] == null) {
                 map.remove(key)
             }
         }
         val enabledMap: MutableMap<String, Boolean> = LinkedHashMap()
         // Don't store true values as they are the default
-        for (keyEnabled in _mdEnabledFields.keys) {
+        for (keyEnabled in ENABLED_FIELDS_BY_NAME.keys) {
             if (!isEnabled(keyEnabled)) {
                 enabledMap[keyEnabled] = false
             }
@@ -1063,23 +1063,23 @@ class MetadataInfo {
     }
 
     operator fun get(id: String): Any? {
-        return getStructObject(id, _mdFields, false, false, false, null)
+        return getStructObject(id, FIELDS_BY_NAME, false, false, false, null)
     }
 
     fun getString(id: String): String {
-        return getStructObject(id, _mdFields, false, true, false, null) as String
+        return getStructObject(id, FIELDS_BY_NAME, false, true, false, null) as String
     }
 
     operator fun get(id: String, defaultValue: Any): Any {
-        return getStructObject(id, _mdFields, false, false, true, defaultValue)!!
+        return getStructObject(id, FIELDS_BY_NAME, false, false, true, defaultValue)!!
     }
 
     fun getString(id: String, defaultValue: String): String {
-        return getStructObject(id, _mdFields, false, true, true, defaultValue) as String
+        return getStructObject(id, FIELDS_BY_NAME, false, true, true, defaultValue) as String
     }
 
     private fun _getObjectEnabled(id: String): Boolean {
-        return getStructObject(id, _mdEnabledFields, false, false, true, false) as Boolean
+        return getStructObject(id, ENABLED_FIELDS_BY_NAME, false, false, true, false) as Boolean
     }
 
     private fun _setStructObject(
@@ -1123,29 +1123,36 @@ class MetadataInfo {
     }
 
     operator fun set(id: String, value: Any?) {
-        _setStructObject(id, value, false, false, _mdFields)
+        _setStructObject(id, value, false, false, FIELDS_BY_NAME)
     }
 
     fun setAppend(id: String, value: Any?) {
-        _setStructObject(id, value, true, false, _mdFields)
+        _setStructObject(id, value, true, false, FIELDS_BY_NAME)
     }
 
     fun setFromString(id: String, value: String?) {
-        _setStructObject(id, value, false, true, _mdFields)
+        _setStructObject(id, value, false, true, FIELDS_BY_NAME)
     }
 
     fun setAppendFromString(id: String, value: String?) {
-        _setStructObject(id, value, true, true, _mdFields)
+        _setStructObject(id, value, true, true, FIELDS_BY_NAME)
     }
 
     private fun _setObjectEnabled(id: String, value: Boolean) {
-        _setStructObject(id, value, false, false, _mdEnabledFields)
+        _setStructObject(id, value, false, false, ENABLED_FIELDS_BY_NAME)
     }
 
     companion object {
-        var hrSizes = arrayOf("B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+
+        val hrSizes = arrayOf("B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+
+        val FIELDS_BY_NAME: Map<String, List<MetadataField>>
+            get() = MetadataInfoFields.FIELDS_BY_NAME
+        val ENABLED_FIELDS_BY_NAME: Map<String, List<MetadataField>>
+            get() = MetadataInfoFields.ENABLED_FIELDS_BY_NAME
+
         fun keys(): List<String> {
-            return _mdFields.keys.toList()
+            return FIELDS_BY_NAME.keys.toList()
         }
 
         fun keyIsWritable(key: String): Boolean {
@@ -1161,7 +1168,7 @@ class MetadataInfo {
             val enMap = map["_enabled"]
             if (enMap != null && Map::class.java.isAssignableFrom(enMap.javaClass)) {
                 val enabledMap = enMap as Map<String, Any>
-                for (fieldName in _mdEnabledFields.keys) {
+                for (fieldName in ENABLED_FIELDS_BY_NAME.keys) {
                     if (enabledMap.containsKey(fieldName)) {
                         md.setEnabled(fieldName, (enabledMap[fieldName] as Boolean?)!!)
                     }
@@ -1170,11 +1177,8 @@ class MetadataInfo {
             return md
         }
 
-        var _mdFields: Map<String, List<MetadataField>> = emptyMap()
-        var _mdEnabledFields: Map<String, List<MetadataField>> = emptyMap()
-
         fun getFieldDescription(id: String): MetadataField? {
-            val fields = _mdFields[id]!!
+            val fields = FIELDS_BY_NAME[id]!!
             return if (fields.isNotEmpty()) {
                 fields[fields.size - 1]
             } else null
