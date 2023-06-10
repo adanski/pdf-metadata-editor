@@ -7,12 +7,12 @@ import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.common.PDMetadata
 import org.apache.xmpbox.XMPMetadata
 import org.apache.xmpbox.xml.XmpSerializer
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.fail
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.fail
 
 /**
  * @author zaro
@@ -53,7 +53,7 @@ class DcDateTest {
                 dcS.dates
             }
         } catch (e: Exception) {
-            fail(e)
+            fail(cause = e)
         }
 
 

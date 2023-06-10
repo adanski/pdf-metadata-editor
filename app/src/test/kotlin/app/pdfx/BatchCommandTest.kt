@@ -2,8 +2,10 @@ package app.pdfx
 
 import app.pdfx.PdfMetadataEditBatch.ActionStatus
 import app.pdfx.metadata.MetadataInfo
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.fail
 
 private const val NUM_FILES = 5
 
@@ -24,7 +26,7 @@ class BatchCommandTest {
             override fun addStatus(filename: String, message: String) {}
             override fun addError(filename: String, error: String) {
                 println(error)
-                fail<Any>(error)
+                fail(error)
             }
         })
         val empty = MetadataInfo()
@@ -51,7 +53,7 @@ class BatchCommandTest {
             override fun addStatus(filename: String, message: String) {}
             override fun addError(filename: String, error: String) {
                 println(error)
-                fail<Any>(error)
+                fail(error)
             }
         })
         val empty = MetadataInfo()
@@ -81,7 +83,7 @@ class BatchCommandTest {
             override fun addStatus(filename: String, message: String) {}
             override fun addError(filename: String, error: String) {
                 println(error)
-                fail<Any>(error)
+                fail(error)
             }
         })
         val empty = MetadataInfo()

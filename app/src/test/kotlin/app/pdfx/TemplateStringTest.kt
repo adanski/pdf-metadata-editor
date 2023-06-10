@@ -1,10 +1,11 @@
 package app.pdfx
 
 import app.pdfx.metadata.MetadataInfo
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class TemplateStringTest {
+
     @Test
     fun `test process`() {
         val md = MetadataInfo()

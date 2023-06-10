@@ -2,10 +2,10 @@ package app.pdfx
 
 import app.pdfx.CommandLine.ParseError
 import app.pdfx.metadata.MetadataInfo
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.time.Instant
 import java.util.*
+import kotlin.test.*
 
 private val MD_FIELD_LIST = listOf(
     "doc.title", "doc.author", "doc.subject", "doc.keywords",
@@ -152,7 +152,7 @@ class CommandLineTest {
 
     @Test
     fun `test invalid 1`() {
-        assertThrows(ParseError::class.java) {
+        assertThrows<ParseError> {
             val c = CommandLine.parse(
                 arrayOf(
                     "--something", "editv", "doc.creationDate"
@@ -163,7 +163,7 @@ class CommandLineTest {
 
     @Test
     fun testInvalid2() {
-        assertThrows(ParseError::class.java) {
+        assertThrows<ParseError> {
             val c = CommandLine.parse(
                 arrayOf(
                     "--renameTemplate"

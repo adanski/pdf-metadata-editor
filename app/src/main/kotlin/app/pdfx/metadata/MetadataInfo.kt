@@ -1146,11 +1146,6 @@ class MetadataInfo {
 
         val hrSizes = arrayOf("B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 
-        val FIELDS_BY_NAME: Map<String, List<MetadataField>>
-            get() = MetadataInfoFields.FIELDS_BY_NAME
-        val ENABLED_FIELDS_BY_NAME: Map<String, List<MetadataField>>
-            get() = MetadataInfoFields.ENABLED_FIELDS_BY_NAME
-
         fun keys(): List<String> {
             return FIELDS_BY_NAME.keys.toList()
         }

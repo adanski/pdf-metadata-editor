@@ -2,7 +2,7 @@ package app.pdfx.metadata.processing
 
 import app.pdfx.metadata.MetadataField
 import app.pdfx.metadata.annotation.MdStruct
-import com.squareup.javapoet.JavaFile
+import com.squareup.kotlinpoet.FileSpec
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.SourceVersion
@@ -68,7 +68,7 @@ internal class AnnotationProcessor : AbstractProcessor() {
         }
 
         val fieldsDictionaryFactory = FieldsDictionaryFactory(processingEnv)
-        val file: JavaFile = fieldsDictionaryFactory.create(
+        val file: FileSpec = fieldsDictionaryFactory.create(
             root,
             fieldsDictionaryFactory.dictionaryField("FIELDS_BY_NAME", fieldsByName),
             fieldsDictionaryFactory.dictionaryField("ENABLED_FIELDS_BY_NAME", enabledFieldsByName)

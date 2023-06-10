@@ -4,16 +4,15 @@ import app.pdfx.metadata.MetadataFieldType
 import app.pdfx.metadata.MetadataInfo
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.PDPage
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import java.io.File
 import java.math.BigInteger
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.time.Instant
 import java.util.*
-import java.util.function.Supplier
+import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MetadataInfoTest {
     class PMTuple(val file: File, val md: MetadataInfo)
@@ -25,15 +24,15 @@ class MetadataInfoTest {
         val md1 = MetadataInfo()
         val md2 = MetadataInfo()
         md1.setAppendFromString("doc.title", "a title")
-        Assertions.assertFalse(md1.isEquivalent(md2))
+        assertFalse(md1.isEquivalent(md2))
         md2.setAppendFromString("doc.title", md1.getString("doc.title"))
         assertTrue(md1.isEquivalent(md2))
         md1.setAppendFromString("basic.rating", "333")
-        Assertions.assertFalse(md1.isEquivalent(md2))
+        assertFalse(md1.isEquivalent(md2))
         md2.setAppendFromString("basic.rating", "333")
         assertTrue(md1.isEquivalent(md2))
         md1.setAppendFromString("rights.marked", "true")
-        Assertions.assertFalse(md1.isEquivalent(md2))
+        assertFalse(md1.isEquivalent(md2))
         md2.setAppendFromString("rights.marked", "true")
         assertTrue(md1.isEquivalent(md2))
     }
@@ -50,7 +49,7 @@ class MetadataInfoTest {
         for (t in randomFiles(NUM_FILES)) {
             val loaded = MetadataInfo()
             loaded.loadFromPDF(t.file)
-            assertTrue(t.md.isEquivalent(loaded), errorMessage(t, loaded))
+            assertTrue(t.md.isEquivalent(loaded), errorMessage(t, loaded)())
         }
     }
 
@@ -126,8 +125,8 @@ class MetadataInfoTest {
             return rval
         }
 
-        private fun errorMessage(t: PMTuple, loaded: MetadataInfo): Supplier<String> {
-            return Supplier {
+        private fun errorMessage(t: PMTuple, loaded: MetadataInfo): () -> String {
+            return {
                 """
      ${t.file.absolutePath}
      SAVED:

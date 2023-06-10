@@ -111,7 +111,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
-			<artifactId>kotlin-test</artifactId>
+			<artifactId>kotlin-test-junit5</artifactId>
 			<version>${kotlin.version}</version>
 			<scope>test</scope>
 		</dependency>
@@ -120,12 +120,6 @@
 			<groupId>com.squareup</groupId>
 			<artifactId>kotlinpoet</artifactId>
 			<version>1.14.2</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.squareup</groupId>
-			<artifactId>javapoet</artifactId>
-			<version>1.13.0</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
