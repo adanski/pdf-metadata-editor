@@ -4,12 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>app.pdfx</groupId>
+        <groupId>io.pdfx</groupId>
         <artifactId>pdfx-metadata-editor</artifactId>
         <version>${revision}</version>
     </parent>
 
     <artifactId>metadata</artifactId>
+    <name>PDFx Metadata</name>
 
     <build>
         <plugins>
