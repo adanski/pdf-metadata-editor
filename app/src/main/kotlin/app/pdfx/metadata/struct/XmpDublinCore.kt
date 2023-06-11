@@ -11,7 +11,7 @@ class XmpDublinCore {
     var contributors: List<String>? = null
     var coverage: String? = null
 
-    @FieldId(value = "dates", type = MetadataFieldType.DATE)
+    @field:FieldId(value = "dates", type = MetadataFieldType.DATE)
     var dates: List<Instant>? = null
     var format: String? = null
     var identifier: String? = null

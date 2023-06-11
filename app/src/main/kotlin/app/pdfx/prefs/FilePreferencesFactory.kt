@@ -5,7 +5,7 @@ import java.io.File
 import java.util.prefs.Preferences
 import java.util.prefs.PreferencesFactory
 
-private val log = LoggerFactory.getLogger(FilePreferencesFactory::class.java.name)
+private val log = LoggerFactory.getLogger(FilePreferencesFactory::class.java)
 private const val SYSTEM_PROPERTY_FILE = "app.pdfx.prefs.FilePreferencesFactory.file"
 
 /**

@@ -1,7 +1,7 @@
 package app.pdfx.metadata.processing
 
 import app.pdfx.metadata.MetadataField
-import app.pdfx.metadata.MetadataFieldName
+import app.pdfx.metadata.MetadataFieldReference
 import app.pdfx.metadata.MetadataFieldType
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -42,7 +42,7 @@ internal class FieldsDictionaryFactory(
                             } +
                             ")",
                     MetadataField::class,
-                    MetadataFieldName::class,
+                    MetadataFieldReference::class,
                     MetadataFieldType::class
                 )
                 .build()
@@ -58,7 +58,7 @@ internal class FieldsDictionaryFactory(
     private fun createMetadataField(startingIndex: Int = 1, metadataField: MetadataField): String {
         return "%${startingIndex}T" +
                 "(" +
-                "%${startingIndex + 1}T(\"${metadataField.name.name}\", \"${metadataField.name.qualifiedName}\"), " +
+                "%${startingIndex + 1}T(\"${metadataField.reference.name}\", \"${metadataField.reference.referencePath}\", \"${metadataField.reference.ownerQualifiedName}\"), " +
                 "${if (metadataField.type == null) "null" else "%${startingIndex + 2}T.${metadataField.type.name}"}, " +
                 "${metadataField.list}, " +
                 "${metadataField.writable}" +

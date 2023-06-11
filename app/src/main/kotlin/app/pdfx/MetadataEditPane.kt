@@ -28,130 +28,130 @@ class MetadataEditPane {
 
     var basicMetaPanel: JPanel? = null
 
-    @FieldId("doc.title")
+    @field:FieldId("doc.title")
     var basicTitle: JTextField? = null
 
-    @FieldId("doc.author")
+    @field:FieldId("doc.author")
     var basicAuthor: JTextField? = null
 
-    @FieldId("doc.subject")
+    @field:FieldId("doc.subject")
     var basicSubject: JTextArea? = null
 
-    @FieldId("doc.keywords")
+    @field:FieldId("doc.keywords")
     var basicKeywords: JTextArea? = null
 
-    @FieldId("doc.creator")
+    @field:FieldId("doc.creator")
     var basicCreator: JTextField? = null
 
-    @FieldId("doc.producer")
+    @field:FieldId("doc.producer")
     var basicProducer: JTextField? = null
 
-    @FieldId("doc.trapped")
+    @field:FieldId("doc.trapped")
     var basicTrapped: JComboBox<String>? = null
 
-    @FieldId("doc.creationDate", type = MetadataFieldType.DATE)
+    @field:FieldId("doc.creationDate", type = MetadataFieldType.DATE)
     var basicCreationDate: JDateChooser? = null
 
-    @FieldId("doc.modificationDate", type = MetadataFieldType.DATE)
+    @field:FieldId("doc.modificationDate", type = MetadataFieldType.DATE)
     var basicModificationDate: JDateChooser? = null
 
-    @FieldId("basic.creatorTool")
+    @field:FieldId("basic.creatorTool")
     var xmpBasicCreatorTool: JTextField? = null
 
-    @FieldId("basic.baseURL")
+    @field:FieldId("basic.baseURL")
     var xmpBasicBaseURL: JTextField? = null
 
-    @FieldId("basic.rating")
+    @field:FieldId("basic.rating")
     var xmpBasicRating: JTextField? = null
 
-    @FieldId("basic.label")
+    @field:FieldId("basic.label")
     var xmpBasicLabel: JTextField? = null
 
-    @FieldId("basic.nickname")
+    @field:FieldId("basic.nickname")
     var xmpBasicNickname: JTextField? = null
 
-    @FieldId("basic.identifiers", MetadataFieldType.TEXT)
+    @field:FieldId("basic.identifiers", MetadataFieldType.TEXT)
     var xmpBasicIdentifiers: JTextArea? = null
 
-    @FieldId("basic.advisories", MetadataFieldType.TEXT)
+    @field:FieldId("basic.advisories", MetadataFieldType.TEXT)
     var xmpBasicAdvisories: JTextArea? = null
 
-    @FieldId("basic.modifyDate", MetadataFieldType.DATE)
+    @field:FieldId("basic.modifyDate", MetadataFieldType.DATE)
     var xmpBasicModifyDate: JDateChooser? = null
 
-    @FieldId("basic.createDate", MetadataFieldType.DATE)
+    @field:FieldId("basic.createDate", MetadataFieldType.DATE)
     var xmpBasicCreateDate: JDateChooser? = null
 
-    @FieldId("basic.metadataDate", MetadataFieldType.DATE)
+    @field:FieldId("basic.metadataDate", MetadataFieldType.DATE)
     var xmpBasicMetadataDate: JDateChooser? = null
 
-    @FieldId("pdf.keywords")
+    @field:FieldId("pdf.keywords")
     var xmpPdfKeywords: JTextArea? = null
 
-    @FieldId("pdf.pdfVersion")
+    @field:FieldId("pdf.pdfVersion")
     var xmpPdfVersion: JTextField? = null
 
-    @FieldId("pdf.producer")
+    @field:FieldId("pdf.producer")
     var xmpPdfProducer: JTextField? = null
 
-    @FieldId("dc.title")
+    @field:FieldId("dc.title")
     var xmpDcTitle: JTextField? = null
 
-    @FieldId("dc.coverage")
+    @field:FieldId("dc.coverage")
     var xmpDcCoverage: JTextField? = null
 
-    @FieldId("dc.description")
+    @field:FieldId("dc.description")
     var xmpDcDescription: JTextField? = null
 
-    @FieldId(value = "dc.dates", MetadataFieldType.TEXT)
+    @field:FieldId(value = "dc.dates", MetadataFieldType.TEXT)
     var xmpDcDates: JTextArea? = null
 
-    @FieldId("dc.format")
+    @field:FieldId("dc.format")
     var xmpDcFormat: JTextField? = null
 
-    @FieldId("dc.identifier")
+    @field:FieldId("dc.identifier")
     var xmpDcIdentifier: JTextField? = null
 
-    @FieldId("dc.rights")
+    @field:FieldId("dc.rights")
     var xmpDcRights: JTextField? = null
 
-    @FieldId("dc.source")
+    @field:FieldId("dc.source")
     var xmpDcSource: JTextField? = null
 
-    @FieldId("dc.creators", MetadataFieldType.TEXT)
+    @field:FieldId("dc.creators", MetadataFieldType.TEXT)
     var xmpDcCreators: JTextArea? = null
 
-    @FieldId("dc.contributors", MetadataFieldType.TEXT)
+    @field:FieldId("dc.contributors", MetadataFieldType.TEXT)
     var xmpDcContributors: JTextArea? = null
 
-    @FieldId("dc.languages", MetadataFieldType.TEXT)
+    @field:FieldId("dc.languages", MetadataFieldType.TEXT)
     var xmpDcLanguages: JTextArea? = null
 
-    @FieldId("dc.publishers", MetadataFieldType.TEXT)
+    @field:FieldId("dc.publishers", MetadataFieldType.TEXT)
     var xmpDcPublishers: JTextArea? = null
 
-    @FieldId("dc.relationships", MetadataFieldType.TEXT)
+    @field:FieldId("dc.relationships", MetadataFieldType.TEXT)
     var xmpDcRelationships: JTextArea? = null
 
-    @FieldId("dc.subjects", MetadataFieldType.TEXT)
+    @field:FieldId("dc.subjects", MetadataFieldType.TEXT)
     var xmpDcSubjects: JTextArea? = null
 
-    @FieldId("dc.types", MetadataFieldType.TEXT)
+    @field:FieldId("dc.types", MetadataFieldType.TEXT)
     var xmpDcTypes: JTextArea? = null
 
-    @FieldId("rights.certificate")
+    @field:FieldId("rights.certificate")
     var xmpRightsCertificate: JTextField? = null
 
-    @FieldId("rights.marked", MetadataFieldType.BOOL)
+    @field:FieldId("rights.marked", MetadataFieldType.BOOL)
     var xmpRightsMarked: JComboBox<String>? = null
 
-    @FieldId("rights.owner", MetadataFieldType.TEXT)
+    @field:FieldId("rights.owner", MetadataFieldType.TEXT)
     var xmpRightsOwner: JTextArea? = null
 
-    @FieldId("rights.usageTerms")
+    @field:FieldId("rights.usageTerms")
     var xmpRightsUsageTerms: JTextArea? = null
 
-    @FieldId("rights.webStatement")
+    @field:FieldId("rights.webStatement")
     var xmpRightsWebStatement: JTextField? = null
     var xmlBasicMetaPanel: JPanel? = null
     var xmlPdfMetaPanel: JPanel? = null
@@ -163,130 +163,130 @@ class MetadataEditPane {
     private var scrollPane_1: JScrollPane? = null
     private var scrollPane_2: JScrollPane? = null
 
-    @FieldEnabled("doc.title")
+    @field:FieldEnabled("doc.title")
     var basicTitleEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.author")
+    @field:FieldEnabled("doc.author")
     var basicAuthorEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.subject")
+    @field:FieldEnabled("doc.subject")
     var basicSubjectEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.keywords")
+    @field:FieldEnabled("doc.keywords")
     var basicKeywordsEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.creator")
+    @field:FieldEnabled("doc.creator")
     var basicCreatorEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.producer")
+    @field:FieldEnabled("doc.producer")
     var basicProducerEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.creationDate")
+    @field:FieldEnabled("doc.creationDate")
     var basicCreationDateEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.modificationDate")
+    @field:FieldEnabled("doc.modificationDate")
     var basicModificationDateEnabled: JCheckBox? = null
 
-    @FieldEnabled("doc.trapped")
+    @field:FieldEnabled("doc.trapped")
     var basicTrappedEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.creatorTool")
+    @field:FieldEnabled("basic.creatorTool")
     var xmpBasicCreatorToolEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.createDate")
+    @field:FieldEnabled("basic.createDate")
     var xmpBasicCreateDateEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.modifyDate")
+    @field:FieldEnabled("basic.modifyDate")
     var xmpBasicModifyDateEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.baseURL")
+    @field:FieldEnabled("basic.baseURL")
     var xmpBasicBaseURLEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.rating")
+    @field:FieldEnabled("basic.rating")
     var xmpBasicRatingEnable: JCheckBox? = null
 
-    @FieldEnabled("basic.label")
+    @field:FieldEnabled("basic.label")
     var xmpBasicLabelEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.nickname")
+    @field:FieldEnabled("basic.nickname")
     var xmpBasicNicknameEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.identifiers")
+    @field:FieldEnabled("basic.identifiers")
     var xmpBasicIdentifiersEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.advisories")
+    @field:FieldEnabled("basic.advisories")
     var xmpBasicAdvisoriesEnabled: JCheckBox? = null
 
-    @FieldEnabled("basic.metadataDate")
+    @field:FieldEnabled("basic.metadataDate")
     var xmpBasicMetadataDateEnabled: JCheckBox? = null
 
-    @FieldEnabled("pdf.keywords")
+    @field:FieldEnabled("pdf.keywords")
     var xmpPdfKeywordsEnabled: JCheckBox? = null
 
-    @FieldEnabled("pdf.pdfVersion")
+    @field:FieldEnabled("pdf.pdfVersion")
     var xmpPdfVersionEnabled: JCheckBox? = null
 
-    @FieldEnabled("pdf.producer")
+    @field:FieldEnabled("pdf.producer")
     var xmpPdfProducerEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.title")
+    @field:FieldEnabled("dc.title")
     var xmlDcTitleEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.description")
+    @field:FieldEnabled("dc.description")
     var xmpDcDescriptionEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.creators")
+    @field:FieldEnabled("dc.creators")
     var xmpDcCreatorsEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.contributors")
+    @field:FieldEnabled("dc.contributors")
     var xmpDcContributorsEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.coverage")
+    @field:FieldEnabled("dc.coverage")
     var xmpDcCoverageEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.dates")
+    @field:FieldEnabled("dc.dates")
     var xmpDcDatesEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.format")
+    @field:FieldEnabled("dc.format")
     var xmpDcFormatEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.identifier")
+    @field:FieldEnabled("dc.identifier")
     var xmpDcIdentifierEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.languages")
+    @field:FieldEnabled("dc.languages")
     var xmpDcLanguagesEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.publishers")
+    @field:FieldEnabled("dc.publishers")
     var xmpDcPublishersEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.relationships")
+    @field:FieldEnabled("dc.relationships")
     var xmpDcRelationshipsEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.rights")
+    @field:FieldEnabled("dc.rights")
     var xmpDcRightsEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.source")
+    @field:FieldEnabled("dc.source")
     var xmpDcSourceEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.subjects")
+    @field:FieldEnabled("dc.subjects")
     var xmpDcSubjectsEnabled: JCheckBox? = null
 
-    @FieldEnabled("dc.types")
+    @field:FieldEnabled("dc.types")
     var xmpDcTypesEnabled: JCheckBox? = null
 
-    @FieldEnabled("rights.certificate")
+    @field:FieldEnabled("rights.certificate")
     var xmpRightsCertificateEnabled: JCheckBox? = null
 
-    @FieldEnabled("rights.marked")
+    @field:FieldEnabled("rights.marked")
     var xmpRightsMarkedEnabled: JCheckBox? = null
 
-    @FieldEnabled("rights.owner")
+    @field:FieldEnabled("rights.owner")
     var xmpRightsOwnerEnabled: JCheckBox? = null
 
-    @FieldEnabled("rights.usageTerms")
+    @field:FieldEnabled("rights.usageTerms")
     var xmpRightsUsageTermsEnabled: JCheckBox? = null
 
-    @FieldEnabled("rights.webStatement")
+    @field:FieldEnabled("rights.webStatement")
     var xmpRightsWebStatementEnabled: JCheckBox? = null
     private val scrollPane_3: JScrollPane? = null
     private val scrollPane_4: JScrollPane? = null

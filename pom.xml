@@ -51,6 +51,7 @@
 								<goal>compile</goal>
 							</goals>
 							<configuration>
+								<languageVersion>1.8</languageVersion> <!-- KT-58021 -->
 								<sourceDirs>
 									<source>src/main/kotlin</source>
 									<source>target/generated-sources/annotations</source>
@@ -64,6 +65,7 @@
 								<goal>test-compile</goal>
 							</goals>
 							<configuration>
+								<languageVersion>1.8</languageVersion> <!-- KT-58021 -->
 								<sourceDirs>
 									<source>src/test/kotlin</source>
 									<source>target/generated-test-sources/test-annotations</source>

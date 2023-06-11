@@ -1,7 +1,7 @@
 package app.pdfx.metadata.processing
 
 import app.pdfx.metadata.MetadataField
-import app.pdfx.metadata.MetadataFieldName
+import app.pdfx.metadata.MetadataFieldReference
 import app.pdfx.metadata.MetadataFieldType
 import app.pdfx.metadata.annotation.FieldId
 import app.pdfx.metadata.annotation.MdStruct
@@ -38,28 +38,26 @@ internal class FieldTraverser(
 
         for (field in fields) {
             val mdStruct = field.getAnnotation(MdStruct::class.java)
-            val fieldType: TypeMirror = field.asType()
 
-            processingEnv.messager.printNote("FIELD ${field.simpleName} HAS ${mdStruct?.type}")
             if (mdStruct != null && mdStruct.type === mdType) {
-                val prefix = if (ancestors.isNotEmpty()) "${ancestors[ancestors.size - 1].name.qualifiedName}." else ""
+                val prefix = if (ancestors.isNotEmpty()) "${ancestors[ancestors.size - 1].reference.referencePath}." else ""
                 val name = mdStruct.name.ifEmpty { field.simpleName }
 
-                val t = createField(prefix + name, fieldType, null, mdStruct.access === MdStruct.Access.READ_WRITE)
-                val fieldKlass: TypeElement = processingEnv.typeUtils.asElement(fieldType) as TypeElement
+                val t = createField(prefix + name, field, klass, null, mdStruct.access === MdStruct.Access.READ_WRITE)
+                val fieldKlass: TypeElement = processingEnv.typeUtils.asElement(field.asType()) as TypeElement
                 traverseFields(ancestors + t, true, fieldKlass, mdType, consumer)
             } else {
                 val fieldId = field.getAnnotation(FieldId::class.java)
                 val isParentWritable = if (ancestors.isNotEmpty()) ancestors[ancestors.size - 1].writable else true
                 if (fieldId != null) {
                     val prefix =
-                        if (ancestors.isNotEmpty()) "${ancestors[ancestors.size - 1].name.qualifiedName}." else ""
-                    val t = createField(prefix + fieldId.value, fieldType, fieldId.type, isParentWritable)
+                        if (ancestors.isNotEmpty()) "${ancestors[ancestors.size - 1].reference.referencePath}." else ""
+                    val t = createField(prefix + fieldId.value, field, klass, fieldId.type, isParentWritable)
                     consumer(ancestors + t)
                 } else if (all) {
                     val prefix =
-                        if (ancestors.isNotEmpty()) "${ancestors[ancestors.size - 1].name.qualifiedName}." else ""
-                    val t = createField(prefix + field.simpleName, fieldType, isParentWritable)
+                        if (ancestors.isNotEmpty()) "${ancestors[ancestors.size - 1].reference.referencePath}." else ""
+                    val t = createField(prefix + field.simpleName, field, klass, isParentWritable)
                     consumer(ancestors + t)
                 }
             }
@@ -67,20 +65,25 @@ internal class FieldTraverser(
     }
 
     private fun createField(
-        qualifiedName: String,
-        field: TypeMirror,
+        referencePath: String,
+        field: VariableElement,
+        owningClass: TypeElement,
         type: MetadataFieldType?,
         writable: Boolean
     ): MetadataField {
         return MetadataField(
-            name = MetadataFieldName(qualifiedName),
+            reference = MetadataFieldReference(
+                field.simpleName.toString(),
+                referencePath,
+                owningClass.qualifiedName.toString()
+            ),
             type = type,
             writable = writable,
             list = isAssignable(field, List::class)
         )
     }
 
-    private fun createField(qualifiedName: String, field: TypeMirror, writable: Boolean): MetadataField {
+    private fun createField(referencePath: String, field: VariableElement, owningClass: TypeElement, writable: Boolean): MetadataField {
         val type = processingEnv.run {
             if (isAssignable(field, Boolean::class)) {
                 MetadataFieldType.BOOL
@@ -96,26 +99,27 @@ internal class FieldTraverser(
         }
 
         return MetadataField(
-            name = MetadataFieldName(qualifiedName),
+            reference = MetadataFieldReference(
+                field.simpleName.toString(),
+                referencePath,
+                owningClass.qualifiedName.toString()
+            ),
             type = type,
             writable = writable,
-            list = processingEnv.run {
-                isAssignable(field, List::class)
-            }
+            list = isAssignable(field, List::class)
         )
     }
 
-    private fun isAssignable(first: TypeMirror, second: KClass<*>): Boolean {
-        processingEnv.messager.printNote("isAssignable: first: $first, second: ${second.java.name}")
-
+    private fun isAssignable(first: VariableElement, second: KClass<*>): Boolean {
         return processingEnv.run {
+            val first: TypeMirror = first.asType()
             val second: TypeMirror = if (second.java.isPrimitive) {
                 typeUtils.getPrimitiveType(TypeKind.valueOf(second.java.canonicalName.uppercase()))
             } else {
                 elementUtils.getTypeElement(second.java.canonicalName).asType()
             }
 
-            typeUtils.isAssignable(first, second)
+            typeUtils.isAssignable(typeUtils.erasure(first), second)
         }
     }
 }

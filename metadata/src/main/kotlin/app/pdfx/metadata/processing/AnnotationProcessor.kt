@@ -53,7 +53,7 @@ internal class AnnotationProcessor : AbstractProcessor() {
             MdStruct.Type.CHILD_STRUCT
         ) { fieldDescs: List<MetadataField> ->
             if (fieldDescs.isNotEmpty()) {
-                fieldsByName[fieldDescs[fieldDescs.size - 1].name.qualifiedName] = fieldDescs
+                fieldsByName[fieldDescs[fieldDescs.size - 1].reference.referencePath] = fieldDescs
             }
         }
         traverser.traverseFields(
@@ -63,7 +63,7 @@ internal class AnnotationProcessor : AbstractProcessor() {
             MdStruct.Type.CHILD_ENABLE_STRUCT
         ) { fieldDescs: List<MetadataField> ->
             if (fieldDescs.isNotEmpty()) {
-                enabledFieldsByName[fieldDescs[fieldDescs.size - 1].name.qualifiedName] = fieldDescs
+                enabledFieldsByName[fieldDescs[fieldDescs.size - 1].reference.referencePath] = fieldDescs
             }
         }
 

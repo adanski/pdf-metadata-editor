@@ -17,6 +17,7 @@ import org.apache.xmpbox.XMPMetadata
 import org.apache.xmpbox.type.BadFieldValueException
 import org.apache.xmpbox.xml.XmpParsingException
 import org.apache.xmpbox.xml.XmpSerializer
+import org.slf4j.LoggerFactory
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import java.io.ByteArrayOutputStream
@@ -28,6 +29,8 @@ import java.time.Instant
 import java.util.*
 import java.util.function.Function
 import javax.xml.transform.TransformerException
+
+private val log = LoggerFactory.getLogger(MetadataInfo::class.java)
 
 @MdStruct(type = Type.ROOT_STRUCT)
 class MetadataInfo {
@@ -1116,9 +1119,11 @@ class MetadataInfo {
                 fieldD.set(current, value)
             }
         } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("_setStructObject('$id')", e)
+            log.error("setStructObject failed for '$id'", e)
+            throw e
         } catch (e: IllegalAccessException) {
-            throw IllegalAccessException("_setStructObject('$id') ${e.message}")
+            log.error("setStructObject failed for '$id'", e)
+            throw e
         }
     }
 
