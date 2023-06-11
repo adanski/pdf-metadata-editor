@@ -41,8 +41,8 @@ class FilePreferences(parent: AbstractPreferences?, name: String) : AbstractPref
         }
     }
 
-    override fun getSpi(key: String): String {
-        return root[key]!!
+    override fun getSpi(key: String): String? {
+        return root[key]
     }
 
     override fun removeSpi(key: String) {
@@ -109,7 +109,7 @@ class FilePreferences(parent: AbstractPreferences?, name: String) : AbstractPref
     }
 
     private fun getPath(sb: StringBuilder) {
-        val parent = parent() as FilePreferences ?: return
+        val parent = parent() as FilePreferences? ?: return
         parent.getPath(sb)
         sb.append(name()).append('.')
     }

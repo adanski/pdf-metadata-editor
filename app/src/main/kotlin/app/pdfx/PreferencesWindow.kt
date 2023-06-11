@@ -251,7 +251,7 @@ class PreferencesWindow @JvmOverloads constructor(
         txtpnAaa.font = UIManager.getFont("TextPane.font")
         txtpnAaa.caretPosition = 0
         renameTemplateCombo = JComboBox<Any?>()
-        renameTemplateCombo.addActionListener { e: ActionEvent? -> showPreview(renameTemplateCombo.model.selectedItem as String) }
+        renameTemplateCombo.addActionListener { showPreview(renameTemplateCombo.model.selectedItem as String?) }
         renameTemplateCombo.isEditable = true
         renameTemplateCombo.model = DefaultComboBoxModel<Any?>(
             arrayOf<String?>(
