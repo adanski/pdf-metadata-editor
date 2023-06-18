@@ -20,11 +20,10 @@ kotlin {
                 implementation("org.apache.pdfbox:xmpbox:3.0.0-RC1")
                 implementation("org.slf4j:slf4j-api:2.0.7")
                 implementation("org.slf4j:slf4j-jdk14:2.0.7")
-                implementation("com.squareup.okhttp3:okhttp:4.11.0")
-                implementation("com.google.code.gson:gson:2.10.1")
                 implementation("org.yaml:snakeyaml:2.0")
                 implementation("com.opencsv:opencsv:5.7.1")
                 implementation("javax.xml.bind:jaxb-api:2.3.1")
+                compileOnly("com.squareup:kotlinpoet:1.14.2")
                 //implementation("com.github.ajalt.clikt:clikt:3.5.2")
                 kapt {
                     annotationProcessors("io.pdfx.common.metadata.processing.AnnotationProcessor")

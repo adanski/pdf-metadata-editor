@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import io.pdfx.common.view.tab.TABS
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
