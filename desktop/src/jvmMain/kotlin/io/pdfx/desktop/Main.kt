@@ -13,7 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
-import io.pdfx.common.view.tab.TABS
+import io.pdfx.desktop.view.tab.model.MetadataViewModel
+import io.pdfx.desktop.view.tab.tabItems
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -26,13 +27,15 @@ fun main() {
             state = WindowState(size = DpSize(1440.dp, 768.dp))
         ) {
             val pagerState = rememberPagerState()
+            val metadataViewModel = MetadataViewModel()
+            val tabItems = tabItems(metadataViewModel)
             val coroutineScope = rememberCoroutineScope()
             MaterialTheme(colors = if (isSystemInDarkTheme()) darkColors() else lightColors()) {
                 Column {
                     ScrollableTabRow(
                         selectedTabIndex = pagerState.currentPage,
                     ) {
-                        TABS.forEachIndexed { index, item ->
+                        tabItems.forEachIndexed { index, item ->
                             LeadingIconTab(
                                 selected = index == pagerState.currentPage,
                                 text = { Text(text = item.title) },
@@ -43,10 +46,10 @@ fun main() {
                     }
 
                     HorizontalPager(
-                        pageCount = TABS.size,
+                        pageCount = tabItems.size,
                         state = pagerState
                     ) {
-                        TABS[pagerState.currentPage].screen()
+                        tabItems[pagerState.currentPage].screen()
                     }
                 }
             }
