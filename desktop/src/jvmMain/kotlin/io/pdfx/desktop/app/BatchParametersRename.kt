@@ -1,6 +1,6 @@
 package io.pdfx.desktop.app
 
-import io.pdfx.app.CommandLine.Companion.mdFieldsHelpMessage
+import io.pdfx.desktop.app.CommandLine.Companion.mdFieldsHelpMessage
 import java.awt.*
 import java.awt.event.ActionEvent
 import javax.swing.*
@@ -10,11 +10,11 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.text.JTextComponent
 
-class BatchParametersRename(parameters: io.pdfx.desktop.app.BatchOperationParameters?, owner: Frame?) :
+class BatchParametersRename(parameters: BatchOperationParameters?, owner: Frame?) :
     BatchParametersWindow(parameters, owner) {
     private var previewLabel: JLabel? = null
 
-    constructor(params: io.pdfx.desktop.app.BatchOperationParameters?) : this(params, null)
+    constructor(params: BatchOperationParameters?) : this(params, null)
 
     override fun createContentPane() {
         title = "Batch rename parameters"

@@ -26,9 +26,9 @@ fun main() {
             icon = painterResource("icon-lin.png"),
             state = WindowState(size = DpSize(1440.dp, 768.dp))
         ) {
-            val pagerState = rememberPagerState()
             val metadataViewModel = MetadataViewModel()
             val tabItems = tabItems(metadataViewModel)
+            val pagerState = rememberPagerState(pageCount = { tabItems.size })
             val coroutineScope = rememberCoroutineScope()
             MaterialTheme(colors = if (isSystemInDarkTheme()) darkColors() else lightColors()) {
                 Column {
@@ -46,7 +46,6 @@ fun main() {
                     }
 
                     HorizontalPager(
-                        pageCount = tabItems.size,
                         state = pagerState
                     ) {
                         tabItems[pagerState.currentPage].screen()

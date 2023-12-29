@@ -1,10 +1,10 @@
 package io.pdfx.desktop.app.metadata
 
-import io.pdfx.app.CommandLine
-import io.pdfx.app.DateFormat
-import io.pdfx.app.ListFormat
-import io.pdfx.metadata.MetadataField
-import io.pdfx.metadata.MetadataFieldType
+import io.pdfx.common.metadata.MetadataField
+import io.pdfx.common.metadata.MetadataFieldType
+import io.pdfx.desktop.util.DateFormat
+import io.pdfx.desktop.util.ListFormat
+import io.pdfx.desktop.util.ParseError
 import java.time.Instant
 import java.util.*
 
@@ -47,7 +47,7 @@ fun MetadataField.makeValueFromString(value: String?): Any? {
             for (line in value.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()) {
                 try {
                     rval.add(DateFormat.parseDate(line.trim { it <= ' ' }))
-                } catch (e: CommandLine.ParseError) {
+                } catch (e: ParseError) {
                     throw IllegalArgumentException("Invalid date format: $line")
                 }
             }
@@ -67,7 +67,7 @@ fun MetadataField.makeValueFromString(value: String?): Any? {
         } else if (type === MetadataFieldType.DATE) {
             return try {
                 DateFormat.parseDate(value)
-            } catch (e: CommandLine.ParseError) {
+            } catch (e: ParseError) {
                 throw IllegalArgumentException("Invalid date format: $value")
             }
         }

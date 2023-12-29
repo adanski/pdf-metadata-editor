@@ -6,7 +6,7 @@ import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
 
-open class BatchParametersEdit(parameters: io.pdfx.desktop.app.BatchOperationParameters?, owner: Frame? = null) :
+open class BatchParametersEdit(parameters: BatchOperationParameters?, owner: Frame? = null) :
     BatchParametersWindow(parameters, owner) {
     protected lateinit var defaultMetadataPane: MetadataEditPane
     protected var lblSelectFieldsTo: JLabel? = null

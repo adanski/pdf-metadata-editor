@@ -1,6 +1,6 @@
 package io.pdfx.desktop.app
 
-import io.pdfx.app.metadata.MetadataInfo
+import io.pdfx.desktop.app.metadata.MetadataInfo
 import io.pdfx.common.prefs.APP_PREFERENCES
 
 class BatchOperationParameters {
@@ -8,7 +8,7 @@ class BatchOperationParameters {
     var metadata = MetadataInfo()
     var renameTemplate: String? = null
 
-    fun storeForCommand(command: io.pdfx.desktop.app.CommandDescription) {
+    fun storeForCommand(command: CommandDescription) {
         if (command.`is`("edit")) {
             return
         }
@@ -21,8 +21,8 @@ class BatchOperationParameters {
 
     companion object {
         @JvmStatic
-        fun loadForCommand(command: io.pdfx.desktop.app.CommandDescription): io.pdfx.desktop.app.BatchOperationParameters {
-            val params = io.pdfx.desktop.app.BatchOperationParameters()
+        fun loadForCommand(command: CommandDescription): BatchOperationParameters {
+            val params = BatchOperationParameters()
             if (command.`is`("edit")) {
                 val defaultMetadataYAML = APP_PREFERENCES.getString("defaultMetadata")
                 if (!defaultMetadataYAML.isNullOrEmpty()) {

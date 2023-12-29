@@ -1,9 +1,8 @@
 package io.pdfx.desktop.app
 
 import io.pdfx.desktop.app.BatchOperationParameters.Companion.loadForCommand
-import io.pdfx.app.PdfMetadataEditBatch.ActionStatus
+import io.pdfx.desktop.app.PdfMetadataEditBatch.ActionStatus
 import io.pdfx.common.prefs.APP_PREFERENCES
-import io.pdfx.desktop.util.Constants
 import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
@@ -102,32 +101,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         statusScrollPane.setViewportView(statusText)
         statusText.isEditable = false
         val estyle = statusText.addStyle("ERROR", null)
-        val txtpnnoBatchLicense: JTextPane = JTextPane()
-        txtpnnoBatchLicense.isEditable = false
-        txtpnnoBatchLicense.background = UIManager.getColor("Panel.background")
-        txtpnnoBatchLicense.contentType = "text/html"
-        txtpnnoBatchLicense.text = "<p align=center>No batch license. In order to use batch operations please get a license from <a href='" + Constants.LATEST_RELEASE_URL + "'>" + Constants.LATEST_RELEASE_URL + "<a></p>"
-        val gbc_txtpnnoBatchLicense = GridBagConstraints()
-        gbc_txtpnnoBatchLicense.fill = GridBagConstraints.BOTH
-        gbc_txtpnnoBatchLicense.insets = Insets(0, 10, 5, 10)
-        gbc_txtpnnoBatchLicense.gridwidth = 3
-        gbc_txtpnnoBatchLicense.gridx = 0
-        gbc_txtpnnoBatchLicense.gridy = 4
-        contentPane.add(txtpnnoBatchLicense, gbc_txtpnnoBatchLicense)
-        txtpnnoBatchLicense.addHyperlinkListener { e: HyperlinkEvent ->
-            if (e.eventType != HyperlinkEvent.EventType.ACTIVATED) {
-                return@addHyperlinkListener
-            }
-            if (!Desktop.isDesktopSupported()) {
-                return@addHyperlinkListener
-            }
-            val desktop = Desktop.getDesktop()
-            if (!desktop.isSupported(Desktop.Action.BROWSE)) {
-                return@addHyperlinkListener
-            }
-            val uri = e.url.toURI()
-            desktop.browse(uri)
-        }
+
         val panel = JPanel()
         val gbc_panel = GridBagConstraints()
         gbc_panel.anchor = GridBagConstraints.WEST
@@ -187,8 +161,6 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         glassPane = FileDropMessage()
         btnAction.isEnabled = true
         gridBagLayout.rowHeights[4] = 0
-        contentPane.remove(txtpnnoBatchLicense)
-        gridBagLayout.removeLayoutComponent(txtpnnoBatchLicense)
         val imgURL = PdfMetadataEditWindow::class.java
             .getResource("pdf-metadata-edit.png")
         val icoImg = ImageIcon(imgURL)
@@ -313,7 +285,7 @@ class BatchOperationWindow(command: CommandDescription?) : JFrame() {
         }
     }
 
-    private fun getBatchParameters(command: CommandDescription): io.pdfx.desktop.app.BatchOperationParameters {
+    private fun getBatchParameters(command: CommandDescription): BatchOperationParameters {
         var params = batchParameters[command.name]
         if (params == null) {
             params = loadForCommand(command)

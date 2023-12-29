@@ -16,7 +16,7 @@ kotlin {
                 implementation("org.slf4j:slf4j-api:2.0.7")
                 implementation("org.slf4j:slf4j-jdk14:2.0.7")
                 compileOnly("com.squareup:kotlinpoet:1.14.2")
-                implementation("org.ocpsoft.prettytime:prettytime:4.0.4.Final")
+                implementation("org.ocpsoft.prettytime:prettytime:5.0.7.Final")
             }
         }
         val commonTest by getting {

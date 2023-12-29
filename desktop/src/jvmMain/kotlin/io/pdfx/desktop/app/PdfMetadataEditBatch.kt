@@ -1,12 +1,12 @@
 package io.pdfx.desktop.app
 
-import io.pdfx.app.CsvMetadata.readFile
-import io.pdfx.app.metadata.MetadataInfo
+import io.pdfx.desktop.app.CsvMetadata.readFile
+import io.pdfx.desktop.app.metadata.MetadataInfo
 import java.io.*
 import java.nio.file.Files
 import java.util.*
 
-class PdfMetadataEditBatch @JvmOverloads constructor(var params: io.pdfx.desktop.app.BatchOperationParameters? = null) {
+class PdfMetadataEditBatch @JvmOverloads constructor(var params: BatchOperationParameters? = null) {
     interface ActionStatus {
         fun addStatus(filename: String, message: String)
         fun addError(filename: String, error: String)

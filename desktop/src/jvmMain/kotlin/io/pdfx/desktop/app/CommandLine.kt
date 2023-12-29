@@ -1,6 +1,7 @@
 package io.pdfx.desktop.app
 
-import io.pdfx.app.metadata.MetadataInfo
+import io.pdfx.desktop.app.metadata.MetadataInfo
+import io.pdfx.desktop.util.ParseError
 import java.util.*
 
 class CommandLine {

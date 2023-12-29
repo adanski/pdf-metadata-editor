@@ -9,10 +9,10 @@ import javax.swing.JDialog
 import javax.swing.KeyStroke
 
 abstract class BatchParametersWindow(
-    parameters: io.pdfx.desktop.app.BatchOperationParameters?,
+    parameters: BatchOperationParameters?,
     owner: Frame? = null
 ) : JDialog(owner, true) {
-    var parameters: io.pdfx.desktop.app.BatchOperationParameters
+    var parameters: BatchOperationParameters
     var onClose: Runnable? = null
 
     /**
@@ -23,7 +23,7 @@ abstract class BatchParametersWindow(
         if (parameters != null) {
             this.parameters = parameters
         } else {
-            this.parameters = io.pdfx.desktop.app.BatchOperationParameters()
+            this.parameters = BatchOperationParameters()
         }
         addWindowListener(object : WindowAdapter() {
             override fun windowClosing(arg0: WindowEvent) {

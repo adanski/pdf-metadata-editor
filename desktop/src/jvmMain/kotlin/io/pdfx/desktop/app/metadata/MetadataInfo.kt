@@ -1,18 +1,16 @@
 package io.pdfx.desktop.app.metadata
 
-import io.pdfx.common.metadata.ENABLED_FIELDS_BY_NAME
-import io.pdfx.common.metadata.FIELDS_BY_NAME
-import com.google.gson.GsonBuilder
-import io.pdfx.app.DateFormat.formatDateTimeFull
-import io.pdfx.app.TemplateString
-import io.pdfx.app.XmpParserProvider
-import io.pdfx.app.metadata.struct.*
-import io.pdfx.app.toCalendar
-import io.pdfx.app.toInstants
-import io.pdfx.metadata.MetadataField
-import io.pdfx.metadata.MetadataFieldType
-import io.pdfx.metadata.annotation.MdStruct
-import io.pdfx.metadata.annotation.MdStruct.Type
+import io.pdfx.desktop.util.DateFormat.formatDateTimeFull
+import io.pdfx.desktop.app.TemplateString
+import io.pdfx.desktop.util.XmpParserProvider
+import io.pdfx.common.metadata.annotation.*
+import io.pdfx.common.metadata.MetadataField
+import io.pdfx.common.metadata.MetadataFieldType
+import io.pdfx.common.metadata.annotation.MdStruct.Access
+import io.pdfx.common.metadata.annotation.MdStruct.Type
+import io.pdfx.desktop.metadata.struct.*
+import io.pdfx.desktop.util.toCalendar
+import io.pdfx.desktop.util.toInstants
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.io.MemoryUsageSetting
 import org.apache.pdfbox.pdmodel.PDDocument
@@ -31,7 +29,6 @@ import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util.*
-import java.util.function.Function
 import javax.xml.transform.TransformerException
 
 private val log = LoggerFactory.getLogger(MetadataInfo::class.java)
@@ -54,7 +51,7 @@ class MetadataInfo {
     @field:MdStruct
     var rights: XmpRights
 
-    @field:MdStruct(name = "file", access = MdStruct.Access.READ_ONLY)
+    @field:MdStruct(name = "file", access = Access.READ_ONLY)
     var file: FileInfo
 
     @field:MdStruct(name = "doc", type = Type.CHILD_ENABLE_STRUCT)
@@ -72,7 +69,7 @@ class MetadataInfo {
     @field:MdStruct(name = "rights", type = Type.CHILD_ENABLE_STRUCT)
     var rightsEnabled: XmpRightsEnabled
 
-    @field:MdStruct(name = "file", type = Type.CHILD_ENABLE_STRUCT, access = MdStruct.Access.READ_ONLY)
+    @field:MdStruct(name = "file", type = Type.CHILD_ENABLE_STRUCT, access = Access.READ_ONLY)
     var fileEnabled: FileInfoEnabled
 
     init {
@@ -180,7 +177,10 @@ class MetadataInfo {
     @Throws(IOException::class, XmpParsingException::class, BadFieldValueException::class)
     fun loadFromPDF(pdfFile: File) {
         loadPDFFileInfo(pdfFile)
-        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720)).use { document -> loadFromPDF(document) }
+        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720).streamCache)
+            .use { document ->
+                loadFromPDF(document)
+            }
     }
 
     @Throws(IOException::class)
@@ -762,8 +762,10 @@ class MetadataInfo {
     }
 
     fun saveAsPDF(pdfFile: File, newFile: File? = null) {
-        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720))
-            .use { document -> saveToPDF(document, newFile ?: pdfFile) }
+        Loader.loadPDF(pdfFile, MemoryUsageSetting.setupMixed(30_720).streamCache)
+            .use { document ->
+                saveToPDF(document, newFile ?: pdfFile)
+            }
     }
 
     fun copyDocToXMP() {
@@ -830,11 +832,11 @@ class MetadataInfo {
         return _getObjectEnabled(id)
     }
 
-    fun <T> asFlatMap(convertor: Function<Any?, T>): MutableMap<String, T> {
+    fun <T> asFlatMap(mapper: (Any?) -> T): MutableMap<String, T> {
         val map = LinkedHashMap<String, T>()
         for (fieldName in keys()) {
             val o = get(fieldName)
-            map[fieldName] = convertor.apply(o)
+            map[fieldName] = mapper(o)
         }
         return map
     }
@@ -851,10 +853,10 @@ class MetadataInfo {
         return map
     }
 
-    fun fromFlatMap(map: Map<String?, Any?>, convertor: Function<Any?, Any?>) {
+    fun fromFlatMap(map: Map<String?, Any?>, mapper: (Any?) -> Any?) {
         for (fieldName in keys()) {
             if (map.containsKey(fieldName)) {
-                set(fieldName, convertor.apply(map[fieldName]))
+                set(fieldName, mapper(map[fieldName]))
             }
         }
     }
